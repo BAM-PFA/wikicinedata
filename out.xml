@@ -1,0 +1,226 @@
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>10eeae8e-c2d4-4eb1-8a37-a00eb001850d</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/10eeae8e-c2d4-4eb1-8a37-a00eb001850d</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm25885)'****'</refName>
+  <updatedAt>1999-02-24T14:38:53.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person12251)'Andy Warhol'</creator>
+  <shortIdentifier>pfafilm25885</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>****</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>4b56c369-81b2-478d-8dce-0c9abe136b4d</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/4b56c369-81b2-478d-8dce-0c9abe136b4d</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24259)'06'</refName>
+  <updatedAt>1996-11-11T18:40:51.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person4668)'Theo van Gogh (Director)'</creator>
+  <shortIdentifier>pfafilm24259</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>06</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>f2a4ca42-2223-4a5a-b299-a2d4a28f2d2b</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/f2a4ca42-2223-4a5a-b299-a2d4a28f2d2b</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24128)'½ mensch'</refName>
+  <updatedAt>1996-11-11T18:40:41.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person5727)'Sogo Ishii'</creator>
+  <shortIdentifier>pfafilm24128</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>½ mensch</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>ef3b6eea-4e18-4e71-ac10-e7c5b9f786c0</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/ef3b6eea-4e18-4e71-ac10-e7c5b9f786c0</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm426)'10'</refName>
+  <updatedAt>2010-03-11T16:41:56.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person3695)'Blake Edwards'</creator>
+  <shortIdentifier>pfafilm426</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>10</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>bbb9f882-f59c-40a6-b120-662dddb3f566</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/bbb9f882-f59c-40a6-b120-662dddb3f566</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24062)'1000 rosen'</refName>
+  <updatedAt>1996-11-11T18:40:34.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person1818)'Theu Boermans'</creator>
+  <shortIdentifier>pfafilm24062</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>1000 rosen</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>39f83e4b-4ded-4e58-829f</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/39f83e4b-4ded-4e58-829f</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(1001Days1594076102367)'1001 Days'</refName>
+  <updatedAt>2020-07-06T22:55:09.930Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(AllenWillis1594070156606)'Allen Willis '</creator>
+  <rev>1</rev>
+  <shortIdentifier>1001Days1594076102367</shortIdentifier>
+  <sas>false</sas>
+  <proposed>true</proposed>
+  <termStatus>complete</termStatus>
+  <termDisplayName>1001 Days</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>62e0c643-43db-4695-a4c5-a91fceae0293</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/62e0c643-43db-4695-a4c5-a91fceae0293</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24147)'100 jahre adolf hitler - die letzte stunde im führerbunker'</refName>
+  <updatedAt>1996-11-11T18:40:43.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person10465)'Christoph Schlingensief'</creator>
+  <shortIdentifier>pfafilm24147</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>100 jahre adolf hitler - die letzte stunde im führerbunker</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>98776363-1c66-434f-bb3e-ea07771b912f</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/98776363-1c66-434f-bb3e-ea07771b912f</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm29496)'100 years of Japanese cinema'</refName>
+  <updatedAt>2013-07-29T17:07:23.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person8854)'Nagisa Oshima'</creator>
+  <shortIdentifier>pfafilm29496</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>100 years of Japanese cinema</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>678baad6-dc92-451b-a474-6121531c2ef3</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/678baad6-dc92-451b-a474-6121531c2ef3</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24269)'102 boulevard haussmann'</refName>
+  <updatedAt>1996-11-11T18:40:52.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person9434)'Udayan Prasad'</creator>
+  <shortIdentifier>pfafilm24269</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>102 boulevard haussmann</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>43ebd205-5c4b-4e7d-987d-8ff12c2963dd</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/43ebd205-5c4b-4e7d-987d-8ff12c2963dd</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24043)'10 ans de cinéma et de télévision publicitaires'</refName>
+  <updatedAt>1996-11-11T18:40:32.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person12583)'Jean-Pierre de Wulf'</creator>
+  <shortIdentifier>pfafilm24043</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>10 ans de cinéma et de télévision publicitaires</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>10eeae8e-c2d4-4eb1-8a37-a00eb001850d</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/10eeae8e-c2d4-4eb1-8a37-a00eb001850d</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm25885)'****'</refName>
+  <updatedAt>1999-02-24T14:38:53.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person12251)'Andy Warhol'</creator>
+  <shortIdentifier>pfafilm25885</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>****</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>4b56c369-81b2-478d-8dce-0c9abe136b4d</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/4b56c369-81b2-478d-8dce-0c9abe136b4d</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24259)'06'</refName>
+  <updatedAt>1996-11-11T18:40:51.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person4668)'Theo van Gogh (Director)'</creator>
+  <shortIdentifier>pfafilm24259</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>06</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>f2a4ca42-2223-4a5a-b299-a2d4a28f2d2b</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/f2a4ca42-2223-4a5a-b299-a2d4a28f2d2b</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24128)'½ mensch'</refName>
+  <updatedAt>1996-11-11T18:40:41.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person5727)'Sogo Ishii'</creator>
+  <shortIdentifier>pfafilm24128</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>½ mensch</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>ef3b6eea-4e18-4e71-ac10-e7c5b9f786c0</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/ef3b6eea-4e18-4e71-ac10-e7c5b9f786c0</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm426)'10'</refName>
+  <updatedAt>2010-03-11T16:41:56.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person3695)'Blake Edwards'</creator>
+  <shortIdentifier>pfafilm426</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>10</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>bbb9f882-f59c-40a6-b120-662dddb3f566</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/bbb9f882-f59c-40a6-b120-662dddb3f566</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24062)'1000 rosen'</refName>
+  <updatedAt>1996-11-11T18:40:34.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person1818)'Theu Boermans'</creator>
+  <shortIdentifier>pfafilm24062</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>1000 rosen</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>39f83e4b-4ded-4e58-829f</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/39f83e4b-4ded-4e58-829f</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(1001Days1594076102367)'1001 Days'</refName>
+  <updatedAt>2020-07-06T22:55:09.930Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(AllenWillis1594070156606)'Allen Willis '</creator>
+  <rev>1</rev>
+  <shortIdentifier>1001Days1594076102367</shortIdentifier>
+  <sas>false</sas>
+  <proposed>true</proposed>
+  <termStatus>complete</termStatus>
+  <termDisplayName>1001 Days</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>62e0c643-43db-4695-a4c5-a91fceae0293</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/62e0c643-43db-4695-a4c5-a91fceae0293</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24147)'100 jahre adolf hitler - die letzte stunde im führerbunker'</refName>
+  <updatedAt>1996-11-11T18:40:43.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person10465)'Christoph Schlingensief'</creator>
+  <shortIdentifier>pfafilm24147</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>100 jahre adolf hitler - die letzte stunde im führerbunker</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>98776363-1c66-434f-bb3e-ea07771b912f</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/98776363-1c66-434f-bb3e-ea07771b912f</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm29496)'100 years of Japanese cinema'</refName>
+  <updatedAt>2013-07-29T17:07:23.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person8854)'Nagisa Oshima'</creator>
+  <shortIdentifier>pfafilm29496</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>100 years of Japanese cinema</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>678baad6-dc92-451b-a474-6121531c2ef3</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/678baad6-dc92-451b-a474-6121531c2ef3</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24269)'102 boulevard haussmann'</refName>
+  <updatedAt>1996-11-11T18:40:52.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person9434)'Udayan Prasad'</creator>
+  <shortIdentifier>pfafilm24269</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>102 boulevard haussmann</termDisplayName>
+</list-item>
+<list-item xmlns:ns2="http://collectionspace.org/services/jaxb">
+  <csid>43ebd205-5c4b-4e7d-987d-8ff12c2963dd</csid>
+  <uri>/workauthorities/d28dfc96-da03-4b0b-9ae1/items/43ebd205-5c4b-4e7d-987d-8ff12c2963dd</uri>
+  <refName>urn:cspace:cinefiles.cspace.berkeley.edu:workauthorities:name(work):item:name(pfafilm24043)'10 ans de cinéma et de télévision publicitaires'</refName>
+  <updatedAt>1996-11-11T18:40:32.000Z</updatedAt>
+  <workflowState>project</workflowState>
+  <creator>urn:cspace:cinefiles.cspace.berkeley.edu:personauthorities:name(person):item:name(person12583)'Jean-Pierre de Wulf'</creator>
+  <shortIdentifier>pfafilm24043</shortIdentifier>
+  <termStatus>complete</termStatus>
+  <termDisplayName>10 ans de cinéma et de télévision publicitaires</termDisplayName>
+</list-item>
