@@ -3,7 +3,9 @@ import csv
 import html
 import json
 from lxml import etree
+import re
 import requests
+import sqlite3
 
 def set_args():
 	parser = argparse.ArgumentParser()
@@ -20,26 +22,41 @@ def set_args():
 
 def parse_response_xml(response):
 	tree = etree.XML(response)
-	page_number = tree.findtext('pageNum')
+	# page_number = tree.findtext('pageNum')
 	items_in_page = tree.findtext('itemsInPage')
 	if not tree.find('list-item') == None:
 		page_items = []
 		for item in tree.findall('list-item'):
 			page_items.append(item)
 
-	# print(page_number)
-	# print(items_in_page)
-	# print(page_items)
-
 	return(items_in_page,page_items)
 
-def fetch_cspace_items(secrets,authority,authority_csid):
+def insert_item(authority,item,cursor):
+	if authority == "workauthorities":
+		data = get_work_data(item)
+		data.append(None) # account for the empty alt title column
+		insertsql = "INSERT INTO items VALUES (?,?,?,?)"
+
+	elif authority == "personauthorities":
+		data = get_person_data(item)
+		insertsql = "INSERT INTO items VALUES (?,?,?)"
+
+	cursor.execute(insertsql,data)
+
+def fetch_cspace_items(secrets,authority,authority_csid,cursor,conn):
 	page_number = 0
 	last_page = False
-	all_items = []
+	# all_items = []
+	if authority == "workauthorities":
+		sql = "CREATE TABLE items (csid, title, creator, alt titles)"
+		cursor.execute(sql)
+
+	elif authority == "personauthorities":
+		sql = "CREATE TABLE items (csid, name, dates)"
+		pass
 
 	while last_page == False:
-		items_query = "{}/{}/{}/items?pgSz=10&pageNum={}".format(
+		items_query = "{}/{}/{}/items?pgSz=10&pgNum={}".format(
 			secrets["cspace_services_url"],
 			authority,
 			authority_csid,
@@ -49,26 +66,30 @@ def fetch_cspace_items(secrets,authority,authority_csid):
 		r = requests.get(items_query,auth=(secrets['username'],secrets['password']))
 		items_in_page,page_items = parse_response_xml(r.content)
 		page_number += 1
-		print(page_number)
+		print(page_items)
 		if int(items_in_page) > 0:
-			all_items.extend(page_items)
+			for item in page_items:
+				insert_item(authority,item,cursor)
 		# if int(items_in_page) < 10:	# this is the hardcoded number of items per page
 		if page_number == 2:
 			last_page = True
 			break
-		# print(set(all_items))
-
-	return all_items
+	conn.commit()
 
 def get_work_data(item):
 	csid = item.findtext('csid')
-	print(csid)
+	# print(csid)
 	creator = item.findtext('creator')
-	print(creator)
+	# strip unnecessary cspace junk
+	try:
+		creator = re.match(".*'(.+)'",creator).groups()[0]
+	except:
+		pass
+	# print(creator)
 	title = item.findtext('termDisplayName')
-	print(title)
+	# print(title)
 	data = [csid,creator,title]
-	print(data)
+	# print(data)
 	return data
 
 def get_person_data(item):
@@ -80,28 +101,26 @@ def get_authority_data(item):
 def get_object_data(item):
 	pass
 
-def write_csv(all_items,authority):
-	all_data = []
-	# with open('out.xml','w') as f:
-	# 	for item in all_items:
-			# f.write(html.unescape(etree.tostring(item, pretty_print=True).decode()))
-	if authority == "workauthorities":
-		headers = ["csid","creator","title"]
-		for item in all_items:
-			data = get_work_data(item)
-			all_data.append(data)
-	elif authority == "personauthorities":
-		headers = ["csid","name","dates"]
-		data = get_person_data(item)
-		pass
-
-	with open('out.csv','w') as f:
-		writer = csv.writer(f)
-		writer.writerow(headers)
-		for item in all_data:
-			writer.writerow(item)
-
-
+# def write_csv(all_items,authority,cursor,conn):
+# 	# with open('out.xml','w') as f:
+# 	# 	for item in all_items:
+# 			# f.write(html.unescape(etree.tostring(item, pretty_print=True).decode()))
+# 	if authority == "workauthorities":
+# 		headers = ["csid","creator","title"]
+# 		sql = "CREATE TABLE items (csid, title, creator, alt titles)"
+# 		for item in all_items:
+# 			data = get_work_data(item)
+# 			all_data.append(data)
+# 	elif authority == "personauthorities":
+# 		headers = ["csid","name","dates"]
+# 		data = get_person_data(item)
+# 		pass
+#
+# 	with open('out.csv','w') as f:
+# 		writer = csv.writer(f)
+# 		writer.writerow(headers)
+# 		for item in all_data:
+# 			writer.writerow(item)
 
 
 
@@ -111,10 +130,13 @@ def main():
 	authority_csid = args.authority_csid
 	with open('secrets.json','r') as f:
 		secrets = json.load(f)
+	db = "items.sqlite"
+	conn = sqlite3.connect(db)
+	cursor = conn.cursor()
 
-	all_items = fetch_cspace_items(secrets,authority,authority_csid)
+	fetch_cspace_items(secrets,authority,authority_csid,cursor,conn)
 
-	write_csv(all_items,authority)
+	# write_csv(all_items,authority)
 
 if __name__=='__main__':
 	main()
