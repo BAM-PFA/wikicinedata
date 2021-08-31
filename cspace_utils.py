@@ -2,13 +2,13 @@ from lxml import etree
 import re
 import requests
 
-def fetch_cspace_items(secrets,authority,authority_csid,database):
+def fetch_cspace_items(config,authority,authority_csid,database):
 	page_number = 0
 	last_page = False
 
 	while last_page == False:
 		items_query = "{}/{}/{}/items?pgSz=10&pgNum={}".format(
-			secrets["cspace_services_url"],
+			config['cspace details']["cspace_services_url"],
 			authority,
 			authority_csid,
 			page_number
