@@ -41,16 +41,17 @@ def parse_response_xml(response):
 def get_work_data(item):
 	csid = item.findtext('csid')
 	print(csid)
+	uri = item.findtext('uri')
 	creator = item.findtext('creator')
-	# strip unnecessary cspace junk
 	try:
-		creator = re.match(".*'(.+)'",creator).groups()[0]
+		# strip unnecessary cspace junk
+		creator = re.match(".*'(.+)'$",creator).groups()[0]
 	except:
 		pass
 	# print(creator)
 	title = item.findtext('termDisplayName')
 	# print(title)
-	data = [csid,creator,title]
+	data = [csid,uri,creator,title]
 	# print(data)
 	return data
 

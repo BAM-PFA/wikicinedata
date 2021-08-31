@@ -51,7 +51,7 @@ def main():
 			sys.exit()
 
 	cspace_utils.fetch_cspace_items(secrets,authority,authority_csid,database)
-	wikidata_utils.reconcile_items(database)
+	wikidata_utils.reconcile_items(database,config)
 
 	# write_csv(all_items,authority)
 
