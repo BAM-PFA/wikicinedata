@@ -1,0 +1,9 @@
+{
+	"cspace details":{
+		"authority to use":"workauthorities",
+		"authority cspace id":"d28dfc96-da03-4b0b-9ae1"
+	},
+	"database details":{
+		"wikidata query chunk size":500
+	}
+}

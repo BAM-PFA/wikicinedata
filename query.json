@@ -1,0 +1,14 @@
+{"q1":
+	{
+		"query": "jaws",
+		"type":"Q11424",
+		"properties": [
+      {
+        "pid": "P1476",
+        "v": "Tiburon"
+      }
+    ],
+	},
+"q2":
+	{"query": "Ernst Schwanhold"}
+}
