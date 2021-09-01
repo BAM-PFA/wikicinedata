@@ -28,8 +28,9 @@ Another potential config point would be the number of results returned per page 
 
 ## Output
 
-The current output is just a sqlite3 database containing one item per row, along with data from the top Wikidata match, if any. It also stores whether the top match is a "100% match"
-along with the matching score provided by the reconciliation service (the scoring is kind of opaque).
+The current output is just a sqlite3 database containing one item per row, along with data from the top Wikidata match, if any. It also stores whether the top match is a "100% match" along with the matching score provided by the reconciliation service (the scoring is kind of opaque).
+
+It should be pretty easy to make a CSV output of the sqlite data, but a potentially huge CSV file would be unwieldy. Maybe add another config point to say how many rows you want per CSV file output in a series of batches? Like "2,000 rows per csv" returning 20 individual CSV files or whatever. TBD.
 
 ## Reconciliation
 
