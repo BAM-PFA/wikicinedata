@@ -51,8 +51,11 @@ def main():
 
 
 		cspace_utils.fetch_cspace_items(secrets,config,authority,authority_csid,database)
+		database.count_me()
 		# get some additional data points for matching/reconciliation
 		cspace_utils.enrich_cspace_items(secrets,config,database)
+		# call the wikidata reconciliation api
+		wikidata_utils.reconcile_items(config,database)
 	else:
 		# mode == csv
 		pass

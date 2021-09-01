@@ -1,14 +1,16 @@
 import concurrent.futures
+# import datetime
 from lxml import etree
 import re
 import requests
-import time
 
 from db_stuff import DBChunk
 
-import datetime
-
 def fetch_cspace_items(secrets,config,authority,authority_csid,database):
+	'''
+	This gets the initial paged results from CSpace.
+	I should figure out how to do this in parallel too.....
+	'''
 	page_number = 0
 	last_page = False
 
@@ -35,34 +37,20 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 
 def enrich_cspace_items(secrets,config,database):
 	authority = config['cspace details']['authority to use']
-	rows_in_db_sql = "SELECT COUNT(id) FROM items;"
-	rows_in_db = database.cursor.execute(rows_in_db_sql).fetchall()[0][0]
 	# print(rows_in_db)
 	start_id = 1
+	# rows_in_db = database.rows_in_db
 	chunk_size = config['database details']['chunk_size']
+	target = 'cspace'
 
-	with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-		'''
-		I found I had to limit the number of threads operating at once to
-		avoid segmentation faults, i/o errors, max http request errors, etc.
-		'''
-		for chunk_start in range(start_id, rows_in_db, chunk_size):
-			chunk_end = chunk_start + chunk_size - 1
-			print(chunk_start,chunk_end)
-			chunk = DBChunk(
-				'cspace',
-				secrets,
-				config,
-				database.filepath,
-				chunk_start,
-				chunk_end
-				)
-			# chunk.daemon = True
-			executor.submit(chunk.start())
-			# chunk.join()
-			# chunk.shutdown_flag.set()
+	database.chunk_me(target,start_id,chunk_size,secrets,config)
 
 def get_chunked_cspace_items(db_chunk):
+	'''
+	This gets a chunk of cspace items from cspace and retrieves extra data
+	to be used for reconciliation.
+	It's called from the DBChunk class
+	'''
 	authority = db_chunk.config['cspace details']['authority to use']
 	if authority == 'workauthorities':
 		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
@@ -80,7 +68,7 @@ def get_chunked_cspace_items(db_chunk):
 				auth=(db_chunk.secrets['username'],db_chunk.secrets['password'])
 				)
 
-			title_list,date_list = parse_single_item(r.content)
+			title_list,date_list = parse_single_work_item(r.content)
 
 			if not title_list == []:
 				insertable = " | ".join(title_list)
@@ -88,10 +76,19 @@ def get_chunked_cspace_items(db_chunk):
 					UPDATE items SET alt_titles=? WHERE id=?
 					'''
 				db_chunk.write_to_db(insert_sql,(insertable,id))
+			if not date_list == []:
+				insertable = " | ".join(date_list)
+				insert_sql = '''\
+					UPDATE items SET year=? WHERE id=?
+					'''
+				db_chunk.write_to_db(insert_sql,(insertable,id))
 
 			# print(datetime.datetime.now())
 
-def parse_single_item(response):
+def parse_single_work_item(response):
+	'''
+	This grabs extra data from a single item XML returned from CSpace
+	'''
 	tree = etree.XML(response)
 	work_data = tree.find('{http://collectionspace.org/services/work}works_common')
 	titles = work_data.find('./workTermGroupList')
@@ -112,7 +109,13 @@ def parse_single_item(response):
 
 	return title_list,date_list
 
+def parse_single_person_item():
+	pass
+
 def parse_paged_response_items(response):
+	'''
+	This parses a page of results from an initial CSpace query
+	'''
 	tree = etree.XML(response)
 	items_in_page = tree.findtext('itemsInPage')
 	if not tree.find('list-item') == None:
@@ -123,6 +126,9 @@ def parse_paged_response_items(response):
 	return(items_in_page,page_items)
 
 def get_work_data(item):
+	'''
+	This gets data from a single listed item in a page of CSpace query results
+	'''
 	csid = item.findtext('csid')
 	print(csid)
 	uri = item.findtext('uri')
