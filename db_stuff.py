@@ -3,6 +3,7 @@ import sqlite3
 import threading
 
 import cspace_utils
+import wikidata_utils
 
 class DBChunk(threading.Thread):
 	"""
@@ -50,9 +51,14 @@ class DBChunk(threading.Thread):
 		self.connect()
 		if self.target == 'cspace':
 			self.fetch_cspace_data()
+		elif self.target == 'wikidata':
+			self.reconcile_items()
 
 	def fetch_cspace_data(self):
 		cspace_utils.get_chunked_cspace_items(self)
+
+	def reconcile_items(self):
+		wikidata_utils.reconcile_chunked_items(self)
 
 class Database:
 	"""represents the database during creation"""
@@ -64,10 +70,10 @@ class Database:
 
 	def create_cspace_table(self,authority):
 		if authority == 'workauthorities':
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, title, creator, year, alt_titles, top_match_score, top_match_label, top_match_Qid)"
+			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, title, creator, year, alt_titles, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
 			self.cursor.execute(sql)
 		elif authority == "personauthorities":
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, top_match_score, top_match_label, top_match_Qid)"
+			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
 			pass
 		else:
 			pass
@@ -80,13 +86,14 @@ class Database:
 		if authority == "workauthorities":
 			data = cspace_utils.get_work_data(item)
 			data.insert(0,None) # leave space for primary key
-			data.extend([None,None,None,None,None]) # account for the empty wikidata columns
-			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?)"
+			data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
+			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 
 		elif authority == "personauthorities":
 			data = cspace_utils.get_person_data(item)
 			data.insert(0,None) # leave space for primary key
-			insertsql = "INSERT INTO items VALUES (?,?,?,?,?)"
+			data.extend([None,None,None,None,None]) # account for the empty wikidata columns
+			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
 
 		self.cursor.execute(insertsql,data)
 

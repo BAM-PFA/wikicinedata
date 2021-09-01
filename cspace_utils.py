@@ -37,9 +37,7 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 
 def enrich_cspace_items(secrets,config,database):
 	authority = config['cspace details']['authority to use']
-	# print(rows_in_db)
 	start_id = 1
-	# rows_in_db = database.rows_in_db
 	chunk_size = config['database details']['chunk_size']
 	target = 'cspace'
 
@@ -141,7 +139,7 @@ def get_work_data(item):
 	# print(creator)
 	title = item.findtext('termDisplayName')
 	# print(title)
-	data = [csid,uri,creator,title]
+	data = [csid,uri,title,creator]
 	# print(data)
 	return data
 

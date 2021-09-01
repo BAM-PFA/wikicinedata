@@ -59,7 +59,7 @@ def main():
 	else:
 		# mode == csv
 		pass
-	wikidata_utils.reconcile_items(database,config)
+	wikidata_utils.reconcile_items(config,database)
 
 	# write_csv(all_items,authority)
 

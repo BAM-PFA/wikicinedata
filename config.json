@@ -6,5 +6,16 @@
 	},
 	"database details":{
 		"chunk_size":5
-	}
+	},
+	"wikidata details":{
+		"item type to reconcile":"Q11424",
+		"item type label":"film",
+		"wikidata reconciliation endpoint":"https://wikidata.reconci.link/en/api"
+	},
+	"holding pen":{
+		"description":"this is extra stuff/other options to use in config",
+		"personauthorities":"ae43b316-d4ff-475f-921c",
+		"human":"Q5",
+		"painting":"Q3305213"
+		}
 }
