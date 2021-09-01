@@ -1,6 +1,5 @@
 import argparse
 import csv
-import html
 import json
 from lxml import etree
 import re
@@ -50,7 +49,13 @@ def main():
 			print("You need to set up the config file correctly, read the readme.")
 			sys.exit()
 
-	cspace_utils.fetch_cspace_items(secrets,authority,authority_csid,database)
+
+		cspace_utils.fetch_cspace_items(secrets,config,authority,authority_csid,database)
+		# get some additional data points for matching/reconciliation
+		cspace_utils.enrich_cspace_items(secrets,config,database)
+	else:
+		# mode == csv
+		pass
 	wikidata_utils.reconcile_items(database,config)
 
 	# write_csv(all_items,authority)
