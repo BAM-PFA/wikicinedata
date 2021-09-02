@@ -12,7 +12,7 @@ def reconcile_items(config,database):
 	target = 'wikidata'
 	secrets = None # don't need secrets for wikidata
 
-	database.chunk_me(target,start_id,chunk_size,secrets,config)
+	database.chunk_me(target,start_id,chunk_size)
 
 def reconcile_chunked_items(db_chunk):
 	item_type_id = db_chunk.config["wikidata details"]["item type to reconcile"]
@@ -21,7 +21,7 @@ def reconcile_chunked_items(db_chunk):
 	if item_type_label == 'film':
 		data_points_sql = "SELECT title, creator, year, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
 		data_points = db_chunk.query_db(data_points_sql)
-		print(data_points)
+		# print(data_points)
 		for item in data_points:
 			# get the relevant data points
 			title = item[0]
@@ -63,14 +63,15 @@ def reconcile_chunked_items(db_chunk):
 
 def parse_reconciled_batch(wikidata_response,db_chunk):
 	for query,result in wikidata_response.items():
-		print(query)
-		print(result)
+		# print(query)
+		# print(result)
 		if not result["result"] == []:
 			# i.e. if there was no match at all in wikidata
 			item_id = int(query.replace("q",""))
 			top_match = result["result"][0]
 			top_match_Qid = top_match["id"]
 			top_match_label = top_match["name"]
+			print(top_match_label)
 			top_match_is_match = top_match["match"]
 			top_match_score = top_match["score"]
 

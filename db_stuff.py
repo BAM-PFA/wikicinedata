@@ -67,6 +67,8 @@ class Database:
 		self.filepath = filepath
 		self.connection = None
 		self.cursor = None
+		self.secrets = None
+		self.config = None
 
 	def create_cspace_table(self,authority):
 		if authority == 'workauthorities':
@@ -97,7 +99,7 @@ class Database:
 
 		self.cursor.execute(insertsql,data)
 
-	def chunk_me(self,target,start_id,chunk_size,secrets,config):
+	def chunk_me(self,target,start_id,chunk_size):
 		with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
 			'''
 			I found I had to limit the number of threads operating at once to
@@ -106,11 +108,11 @@ class Database:
 			'''
 			for chunk_start in range(start_id, self.rows_in_db, chunk_size):
 				chunk_end = chunk_start + chunk_size - 1
-				print(chunk_start,chunk_end)
+				# print(chunk_start,chunk_end)
 				chunk = DBChunk(
 					target,
-					secrets,
-					config,
+					self.secrets,
+					self.config,
 					self.filepath,
 					chunk_start,
 					chunk_end

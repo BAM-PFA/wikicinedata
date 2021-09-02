@@ -1,4 +1,0 @@
-just writing down our authority csids
-
-personauthorities ae43b316-d4ff-475f-921c
-workauthorities d28dfc96-da03-4b0b-9ae1

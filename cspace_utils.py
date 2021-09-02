@@ -30,7 +30,7 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 			for item in page_items:
 				database.insert_cspace_item(authority,item)
 		# if int(items_in_page) < 1000:	# this hardcodes the number of items per result page to 1000
-		if page_number == 2:
+		if page_number == 10:  # this value (page=10) is set for testing
 			last_page = True
 			break
 	database.connection.commit()
@@ -41,7 +41,7 @@ def enrich_cspace_items(secrets,config,database):
 	chunk_size = config['database details']['chunk_size']
 	target = 'cspace'
 
-	database.chunk_me(target,start_id,chunk_size,secrets,config)
+	database.chunk_me(target,start_id,chunk_size)
 
 def get_chunked_cspace_items(db_chunk):
 	'''
@@ -53,7 +53,7 @@ def get_chunked_cspace_items(db_chunk):
 	if authority == 'workauthorities':
 		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
 		uris = db_chunk.query_db(uris_sql)
-		print(uris)
+		# print(uris)
 		for item in uris:
 			uri = item[0]
 			id = item[1]
@@ -94,14 +94,14 @@ def parse_single_work_item(response):
 	if not titles == []:
 		for element in titles:
 			title = element.findtext('termName')
-			print(title)
+			# print(title)
 			title_list.append(title)
 	dates = work_data.find('./workDateGroupList')
 	date_list = []
 	if not dates == []:
-		print(dates)
+		# print(dates)
 		for element in dates:
-			print(element)
+			# print(element)
 			date = element.findtext('dateDisplayDate')
 			date_list.append(date)
 
@@ -128,7 +128,7 @@ def get_work_data(item):
 	This gets data from a single listed item in a page of CSpace query results
 	'''
 	csid = item.findtext('csid')
-	print(csid)
+	# print(csid)
 	uri = item.findtext('uri')
 	creator = item.findtext('creator')
 	try:
@@ -136,9 +136,9 @@ def get_work_data(item):
 		creator = re.match(".*'(.+)'$",creator).groups()[0]
 	except:
 		pass
-	# print(creator)
+	print(creator)
 	title = item.findtext('termDisplayName')
-	# print(title)
+	print(title)
 	data = [csid,uri,title,creator]
 	# print(data)
 	return data

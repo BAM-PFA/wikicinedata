@@ -5,7 +5,7 @@
 		"cspace_services_url":"https://cinefiles.cspace.berkeley.edu/cspace-services"
 	},
 	"database details":{
-		"chunk_size":5
+		"chunk_size":10
 	},
 	"wikidata details":{
 		"item type to reconcile":"Q11424",

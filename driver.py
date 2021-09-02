@@ -33,6 +33,8 @@ def main():
 	db_path = "items.sqlite"
 
 	database = db_stuff.Database(db_path)
+	database.secrets = secrets
+	database.config = config
 	database.connection = sqlite3.connect(db_path)
 	database.cursor = database.connection.cursor()
 
