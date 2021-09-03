@@ -1,3 +1,4 @@
+import asyncio
 import concurrent.futures
 import sqlite3
 import threading
@@ -16,7 +17,8 @@ class DBChunk(threading.Thread):
 		config,
 		filepath,
 		chunk_start,
-		chunk_end
+		chunk_end,
+		cspace_page_number=None
 		):
 		threading.Thread.__init__(self)
 		self.target = target
@@ -30,6 +32,7 @@ class DBChunk(threading.Thread):
 		# ending row id
 		self.chunk_end = chunk_end
 		self.rows_in_db = None
+		self.cspace_page_number = cspace_page_number
 		# self.shutdown_flag = threading.Event()
 
 	def connect(self):
@@ -50,15 +53,35 @@ class DBChunk(threading.Thread):
 	def run(self):
 		self.connect()
 		if self.target == 'cspace':
-			self.fetch_cspace_data()
+			self.fetch_chunked_cspace_page()
+		elif self.target == 'cspace items':
+			self.fetch_cspace_item_data()
 		elif self.target == 'wikidata':
 			self.reconcile_items()
 
-	def fetch_cspace_data(self):
+	def fetch_chunked_cspace_page(self):
+		cspace_utils.fetch_chunked_cspace_page(self)
+
+	def fetch_cspace_item_data(self):
 		cspace_utils.get_chunked_cspace_items(self)
 
 	def reconcile_items(self):
 		wikidata_utils.reconcile_chunked_items(self)
+
+	def insert_cspace_item(self,item):
+		if self.config["cspace details"]["authority to use"] == "workauthorities":
+			data = cspace_utils.get_work_data(item)
+			data.insert(0,None) # leave space for primary key
+			data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
+			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+
+		elif authority == "personauthorities":
+			data = cspace_utils.get_person_data(item)
+			data.insert(0,None) # leave space for primary key
+			data.extend([None,None,None,None,None]) # account for the empty wikidata columns
+			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
+
+		self.cursor.execute(insertsql,data)
 
 class Database:
 	"""represents the database during creation"""
@@ -84,29 +107,30 @@ class Database:
 		rows_in_db_sql = "SELECT COUNT(id) FROM items;"
 		self.rows_in_db = self.cursor.execute(rows_in_db_sql).fetchall()[0][0]
 
-	def insert_cspace_item(self, authority,item):
-		if authority == "workauthorities":
-			data = cspace_utils.get_work_data(item)
-			data.insert(0,None) # leave space for primary key
-			data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
-			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	# def insert_cspace_item(self,item):
+	# 	if self.config["cspace details"]["authority to use"] == "workauthorities":
+	# 		data = cspace_utils.get_work_data(item)
+	# 		data.insert(0,None) # leave space for primary key
+	# 		data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
+	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	#
+	# 	elif authority == "personauthorities":
+	# 		data = cspace_utils.get_person_data(item)
+	# 		data.insert(0,None) # leave space for primary key
+	# 		data.extend([None,None,None,None,None]) # account for the empty wikidata columns
+	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
+	#
+	# 	self.cursor.execute(insertsql,data)
 
-		elif authority == "personauthorities":
-			data = cspace_utils.get_person_data(item)
-			data.insert(0,None) # leave space for primary key
-			data.extend([None,None,None,None,None]) # account for the empty wikidata columns
-			insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
-
-		self.cursor.execute(insertsql,data)
-
-	def chunk_me(self,target,start_id,chunk_size):
-		with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+	def chunk_me(self,target,start_number,end_number,chunk_size):#,cspace_page_number=None):
+		with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
 			'''
 			I found I had to limit the number of threads operating at once to
 			avoid segmentation faults, i/o errors, max http request errors, etc.
 			max_workers=10 sets the limit to 10 threads, maybe it could be more?
 			'''
-			for chunk_start in range(start_id, self.rows_in_db, chunk_size):
+			iteration=0
+			for chunk_start in range(start_number, end_number, chunk_size):
 				chunk_end = chunk_start + chunk_size - 1
 				# print(chunk_start,chunk_end)
 				chunk = DBChunk(
@@ -115,6 +139,8 @@ class Database:
 					self.config,
 					self.filepath,
 					chunk_start,
-					chunk_end
+					chunk_end,
+					cspace_page_number=iteration
 					)
 				executor.submit(chunk.start())
+				iteration+=1

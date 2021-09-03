@@ -12,7 +12,7 @@ def reconcile_items(config,database):
 	target = 'wikidata'
 	secrets = None # don't need secrets for wikidata
 
-	database.chunk_me(target,start_id,chunk_size)
+	database.chunk_me(target,start_id,database.rows_in_db,chunk_size)
 
 def reconcile_chunked_items(db_chunk):
 	item_type_id = db_chunk.config["wikidata details"]["item type to reconcile"]

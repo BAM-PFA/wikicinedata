@@ -11,37 +11,71 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 	This gets the initial paged results from CSpace.
 	I should figure out how to do this in parallel too.....
 	'''
-	page_number = 0
-	last_page = False
+	# page_number = 0
+	# last_page = False
+	# set the number of results you want per page
+	number_results_per_page = config["cspace details"]["query results per page"]
 
-	while last_page == False:
-		items_query = "{}/{}/{}/items?pgSz=10&pgNum={}".format(
-			config["cspace details"]["cspace_services_url"],
-			authority,
-			authority_csid,
-			page_number
-			)
-		# print(items_query)
-		r = requests.get(items_query,auth=(secrets['username'],secrets['password']))
-		items_in_page,page_items = parse_paged_response_items(r.content)
-		page_number += 1
-		# print(page_items)
-		if int(items_in_page) > 0:
-			for item in page_items:
-				database.insert_cspace_item(authority,item)
-		# if int(items_in_page) < 1000:	# this hardcodes the number of items per result page to 1000
-		if page_number == 10:  # this value (page=10) is set for testing
-			last_page = True
-			break
-	database.connection.commit()
+	total_items = get_total_number_of_items(secrets,config)
+
+	max_results_limit = config["cspace details"]["cspace max query results"]
+
+	if not max_results_limit == None:
+		number_of_full_pages,last_page_num_items = divmod(total_items,number_results_per_page)
+		last_page = number_of_full_pages+1
+	else:
+		# if you've set a limit on the number of results you want to deal with
+		# in one pass
+		number_of_full_pages,last_page_num_items = divmod(max_results_limit,number_results_per_page)
+		last_page = number_of_full_pages+1
+
+	# for page_number in range(1,number_of_full_pages+1):
+	# chunk_me(target,start_number,end_number,chunk_size,cspace_page_number=None)
+	database.chunk_me("cspace",0,number_of_full_pages,number_results_per_page)#,cspace_page_number=page_number)
+	database.chunk_me("cspace",number_of_full_pages+1,number_of_full_pages+1,last_page_num_items)#,cspace_page_number=page_number)
+
+
+
+def fetch_chunked_cspace_page(db_chunk):
+	page_query = "{}/{}/{}/items?pgSz={}&pgNum={}".format(
+		db_chunk.config["cspace details"]["cspace_services_url"],
+		db_chunk.config["cspace details"]["authority to use"],
+		db_chunk.config["cspace details"]["authority cspace id"],
+		db_chunk.config["cspace details"]["query results per page"],
+		db_chunk.cspace_page_number
+		)
+	print(page_query)
+	r = requests.get(page_query,auth=(db_chunk.secrets['username'],db_chunk.secrets['password']))
+	items_in_page,page_items = parse_paged_response_items('items',r.content)
+	# page_number += 1
+	# print(page_items)
+	if int(items_in_page) > 0:
+		for item in page_items:
+			db_chunk.insert_cspace_item(item)
+	# this looks for the number of items you want from a cspace query request
+	# if int(items_in_page) < number_results_per_page:
+	db_chunk.connection.commit()
+
+def get_total_number_of_items(secrets,config):
+	# do a first query to figure out how many total items there are in the authority
+	# just retrieve the first page (0) and ask for one item (pgSz=1)
+	# then use the totalItems element to get the total number
+	initial_query = "{}/{}/{}/items?pgSz=1&pgNum=0".format(
+		config["cspace details"]["cspace_services_url"],
+		config["cspace details"]["authority to use"],
+		config["cspace details"]["authority cspace id"]
+		)
+	r = requests.get(initial_query,auth=(secrets['username'],secrets['password']))
+	total_items = parse_paged_response_items('top level',r.content)
+
+	return total_items
 
 def enrich_cspace_items(secrets,config,database):
-	authority = config['cspace details']['authority to use']
 	start_id = 1
 	chunk_size = config['database details']['chunk_size']
-	target = 'cspace'
+	target = 'cspace items'
 
-	database.chunk_me(target,start_id,chunk_size)
+	database.chunk_me(target,start_id,database.rows_in_db,chunk_size)
 
 def get_chunked_cspace_items(db_chunk):
 	'''
@@ -110,18 +144,35 @@ def parse_single_work_item(response):
 def parse_single_person_item():
 	pass
 
-def parse_paged_response_items(response):
+def parse_paged_response_items(operation,response):
 	'''
 	This parses a page of results from an initial CSpace query
+	operation = what you want the parsing to do:
+	* return all the items in the page
+	* return top-level info from the page header
 	'''
-	tree = etree.XML(response)
-	items_in_page = tree.findtext('itemsInPage')
-	if not tree.find('list-item') == None:
-		page_items = []
-		for item in tree.findall('list-item'):
-			page_items.append(item)
+	try:
+		root = etree.XML(response)
+	except:
+		print(response)
 
-	return(items_in_page,page_items)
+	if operation == 'items':
+		items_in_page = root.findtext('itemsInPage')
+		if not root.find('list-item') == None:
+			page_items = []
+			for item in root.findall('list-item'):
+				page_items.append(item)
+
+		return(items_in_page,page_items)
+	elif operation == 'top level':
+		total_items = root.findtext('totalItems')
+		if not total_items in (None,[],''):
+			total_items = int(total_items)
+		else:
+			total_items = 0
+
+		return total_items
+
 
 def get_work_data(item):
 	'''
