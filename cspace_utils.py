@@ -3,6 +3,7 @@ import concurrent.futures
 from lxml import etree
 import re
 import requests
+import time
 
 from db_stuff import DBChunk
 
@@ -11,8 +12,6 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 	This gets the initial paged results from CSpace.
 	I should figure out how to do this in parallel too.....
 	'''
-	# page_number = 0
-	# last_page = False
 	# set the number of results you want per page
 	number_results_per_page = config["cspace details"]["query results per page"]
 
@@ -20,21 +19,17 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 
 	max_results_limit = config["cspace details"]["cspace max query results"]
 
-	if not max_results_limit == None:
+	if max_results_limit in ("",None,"null"):
 		number_of_full_pages,last_page_num_items = divmod(total_items,number_results_per_page)
-		last_page = number_of_full_pages+1
 	else:
 		# if you've set a limit on the number of results you want to deal with
 		# in one pass
 		number_of_full_pages,last_page_num_items = divmod(max_results_limit,number_results_per_page)
-		last_page = number_of_full_pages+1
+	# last_page = number_of_full_pages+1
 
-	# for page_number in range(1,number_of_full_pages+1):
-	# chunk_me(target,start_number,end_number,chunk_size,cspace_page_number=None)
-	database.chunk_me("cspace",0,number_of_full_pages,number_results_per_page)#,cspace_page_number=page_number)
-	database.chunk_me("cspace",number_of_full_pages+1,number_of_full_pages+1,last_page_num_items)#,cspace_page_number=page_number)
-
-
+	database.chunk_me("cspace",0,number_of_full_pages,number_results_per_page)
+	if not last_page_num_items == 0:
+		database.chunk_me("cspace",number_of_full_pages+1,number_of_full_pages+1,number_results_per_page)#,last_page_num_items)
 
 def fetch_chunked_cspace_page(db_chunk):
 	page_query = "{}/{}/{}/items?pgSz={}&pgNum={}".format(
@@ -45,16 +40,31 @@ def fetch_chunked_cspace_page(db_chunk):
 		db_chunk.cspace_page_number
 		)
 	print(page_query)
-	r = requests.get(page_query,auth=(db_chunk.secrets['username'],db_chunk.secrets['password']))
-	items_in_page,page_items = parse_paged_response_items('items',r.content)
-	# page_number += 1
-	# print(page_items)
-	if int(items_in_page) > 0:
-		for item in page_items:
-			db_chunk.insert_cspace_item(item)
-	# this looks for the number of items you want from a cspace query request
-	# if int(items_in_page) < number_results_per_page:
-	db_chunk.connection.commit()
+	try:
+		r = requests.get(page_query,auth=(db_chunk.secrets['username'],db_chunk.secrets['password']))
+		r.raise_for_status()
+		status = True
+		items_in_page,page_items = parse_paged_response_items('items',r.content)
+		# page_number += 1
+		# print(page_items)
+		if int(items_in_page) > 0:
+			for item in page_items:
+				db_chunk.insert_cspace_item(item)
+				print("INSERT")
+		# this looks for the number of items you want from a cspace query request
+		# if int(items_in_page) < number_results_per_page:
+		while True:
+			try:
+				db_chunk.connection.commit()
+				break
+			except Exception as e:
+				print("INSERT ERROR")
+				time.sleep(.2) # wait for db to unlock
+	except requests.exceptions.RequestException as e:
+		status = False
+		print(e)
+
+	return status
 
 def get_total_number_of_items(secrets,config):
 	# do a first query to figure out how many total items there are in the authority
@@ -65,8 +75,14 @@ def get_total_number_of_items(secrets,config):
 		config["cspace details"]["authority to use"],
 		config["cspace details"]["authority cspace id"]
 		)
-	r = requests.get(initial_query,auth=(secrets['username'],secrets['password']))
-	total_items = parse_paged_response_items('top level',r.content)
+	try:
+		print("Getting the total number of items in the authority.")
+		r = requests.get(initial_query,auth=(secrets['username'],secrets['password']))
+		r.raise_for_status()
+		total_items = parse_paged_response_items('top level',r.content)
+	except requests.exceptions.RequestException as e:
+		print(e)
+		total_items = None
 
 	return total_items
 
@@ -74,6 +90,8 @@ def enrich_cspace_items(secrets,config,database):
 	start_id = 1
 	chunk_size = config['database details']['chunk_size']
 	target = 'cspace items'
+	print("Starting to enrich fetched CSpace items.")
+	print(target,start_id,database.rows_in_db,chunk_size)
 
 	database.chunk_me(target,start_id,database.rows_in_db,chunk_size)
 
@@ -84,6 +102,7 @@ def get_chunked_cspace_items(db_chunk):
 	It's called from the DBChunk class
 	'''
 	authority = db_chunk.config['cspace details']['authority to use']
+	status = None
 	if authority == 'workauthorities':
 		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
 		uris = db_chunk.query_db(uris_sql)
@@ -95,27 +114,33 @@ def get_chunked_cspace_items(db_chunk):
 				db_chunk.config["cspace details"]["cspace_services_url"],
 				uri
 				)
-			r = requests.get(
-				item_cspace_query,
-				auth=(db_chunk.secrets['username'],db_chunk.secrets['password'])
-				)
+			print(uri)
+			try:
+				r = requests.get(
+					item_cspace_query,
+					auth=(db_chunk.secrets['username'],db_chunk.secrets['password'])
+					)
+				r.raise_for_status()
+				status = True
+				title_list,date_list = parse_single_work_item(r.content)
 
-			title_list,date_list = parse_single_work_item(r.content)
+				if not title_list == []:
+					insertable = " | ".join(title_list)
+					insert_sql = '''\
+						UPDATE items SET alt_titles=? WHERE id=?
+						'''
+					db_chunk.write_to_db(insert_sql,(insertable,id))
+				if not date_list == []:
+					insertable = " | ".join(date_list)
+					insert_sql = '''\
+						UPDATE items SET year=? WHERE id=?
+						'''
+					db_chunk.write_to_db(insert_sql,(insertable,id))
+			except requests.exceptions.RequestException as e:
+				status = False
+				print(e)
 
-			if not title_list == []:
-				insertable = " | ".join(title_list)
-				insert_sql = '''\
-					UPDATE items SET alt_titles=? WHERE id=?
-					'''
-				db_chunk.write_to_db(insert_sql,(insertable,id))
-			if not date_list == []:
-				insertable = " | ".join(date_list)
-				insert_sql = '''\
-					UPDATE items SET year=? WHERE id=?
-					'''
-				db_chunk.write_to_db(insert_sql,(insertable,id))
-
-			# print(datetime.datetime.now())
+	return status
 
 def parse_single_work_item(response):
 	'''
@@ -173,10 +198,9 @@ def parse_paged_response_items(operation,response):
 
 		return total_items
 
-
 def get_work_data(item):
 	'''
-	This gets data from a single listed item in a page of CSpace query results
+	This gets data from a single listed XML item in a page of CSpace query results
 	'''
 	csid = item.findtext('csid')
 	# print(csid)
@@ -187,9 +211,9 @@ def get_work_data(item):
 		creator = re.match(".*'(.+)'$",creator).groups()[0]
 	except:
 		pass
-	print(creator)
+	# print(creator)
 	title = item.findtext('termDisplayName')
-	print(title)
+	# print(title)
 	data = [csid,uri,title,creator]
 	# print(data)
 	return data

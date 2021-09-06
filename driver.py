@@ -6,6 +6,7 @@ import re
 import requests
 import sqlite3
 import sys
+import time
 # local imports
 import cspace_utils
 import db_stuff
@@ -53,7 +54,12 @@ def main():
 
 
 		cspace_utils.fetch_cspace_items(secrets,config,authority,authority_csid,database)
-		database.count_me()
+		rows = database.count_me()
+		while rows < 1:
+			time.sleep(1)
+			rows = database.count_me()
+			print(rows)
+
 		# get some additional data points for matching/reconciliation
 		cspace_utils.enrich_cspace_items(secrets,config,database)
 		# call the wikidata reconciliation api

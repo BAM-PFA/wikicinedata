@@ -15,6 +15,7 @@ def reconcile_items(config,database):
 	database.chunk_me(target,start_id,database.rows_in_db,chunk_size)
 
 def reconcile_chunked_items(db_chunk):
+	status = None
 	item_type_id = db_chunk.config["wikidata details"]["item type to reconcile"]
 	item_type_label = db_chunk.config["wikidata details"]["item type label"]
 	batch_query_dict = {}
@@ -48,23 +49,33 @@ def reconcile_chunked_items(db_chunk):
 					)
 			# add the query to the batch w/ q+id as key (q1,q2,q3,etc.)
 			batch_query_dict["q{}".format(str(id))] = query
+		print(batch_query_dict)
 	elif item_type_label == "human":
 		pass
 
 	query_payload = json.dumps({"queries":json.dumps(batch_query_dict)})
 
-	r = requests.post(
-		db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
-		data=json.loads(query_payload)
-		)
-	wikidata_response = json.loads(r.content)
+	try:
+		print("Getting Wikidata data for "+title)
+		r = requests.post(
+			db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
+			data=json.loads(query_payload)
+			)
+		r.raise_for_status()
+		status = True
+		wikidata_response = json.loads(r.content)
 
-	parse_reconciled_batch(wikidata_response,db_chunk)
+		parse_reconciled_batch(wikidata_response,db_chunk)
+	except requests.exceptions.RequestException as e:
+		print(e)
+		status = False
+
+	return status
 
 def parse_reconciled_batch(wikidata_response,db_chunk):
 	for query,result in wikidata_response.items():
 		# print(query)
-		# print(result)
+		print(result)
 		if not result["result"] == []:
 			# i.e. if there was no match at all in wikidata
 			item_id = int(query.replace("q",""))

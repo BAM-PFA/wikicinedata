@@ -1,7 +1,9 @@
 import asyncio
 import concurrent.futures
 import sqlite3
+import sys
 import threading
+import time
 
 import cspace_utils
 import wikidata_utils
@@ -52,23 +54,35 @@ class DBChunk(threading.Thread):
 
 	def run(self):
 		self.connect()
-		if self.target == 'cspace':
-			self.fetch_chunked_cspace_page()
-		elif self.target == 'cspace items':
-			self.fetch_cspace_item_data()
-		elif self.target == 'wikidata':
-			self.reconcile_items()
+		while True:
+			if self.target == 'cspace':
+				status = self.fetch_chunked_cspace_page()
+			elif self.target == 'cspace items':
+				status = self.fetch_cspace_item_data()
+			elif self.target == 'wikidata':
+				status = self.reconcile_items()
+
+			if status:
+				print("got it")
+				break
+			else:
+				print("missed it")
+				time.sleep(1) # wait a sec for http error
 
 	def fetch_chunked_cspace_page(self):
-		cspace_utils.fetch_chunked_cspace_page(self)
+		status = cspace_utils.fetch_chunked_cspace_page(self)
+		return status
 
 	def fetch_cspace_item_data(self):
-		cspace_utils.get_chunked_cspace_items(self)
+		status = cspace_utils.get_chunked_cspace_items(self)
+		return status
 
 	def reconcile_items(self):
-		wikidata_utils.reconcile_chunked_items(self)
+		status = wikidata_utils.reconcile_chunked_items(self)
+		return status
 
 	def insert_cspace_item(self,item):
+		# should this go to cspace_utils?
 		if self.config["cspace details"]["authority to use"] == "workauthorities":
 			data = cspace_utils.get_work_data(item)
 			data.insert(0,None) # leave space for primary key
@@ -106,21 +120,9 @@ class Database:
 	def count_me(self):
 		rows_in_db_sql = "SELECT COUNT(id) FROM items;"
 		self.rows_in_db = self.cursor.execute(rows_in_db_sql).fetchall()[0][0]
+		# print(self.rows_in_db)
 
-	# def insert_cspace_item(self,item):
-	# 	if self.config["cspace details"]["authority to use"] == "workauthorities":
-	# 		data = cspace_utils.get_work_data(item)
-	# 		data.insert(0,None) # leave space for primary key
-	# 		data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
-	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-	#
-	# 	elif authority == "personauthorities":
-	# 		data = cspace_utils.get_person_data(item)
-	# 		data.insert(0,None) # leave space for primary key
-	# 		data.extend([None,None,None,None,None]) # account for the empty wikidata columns
-	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
-	#
-	# 	self.cursor.execute(insertsql,data)
+		return self.rows_in_db
 
 	def chunk_me(self,target,start_number,end_number,chunk_size):#,cspace_page_number=None):
 		with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -129,7 +131,10 @@ class Database:
 			avoid segmentation faults, i/o errors, max http request errors, etc.
 			max_workers=10 sets the limit to 10 threads, maybe it could be more?
 			'''
+			futures = []
 			iteration=0
+			print("Target = "+target)
+			print(start_number,end_number,chunk_size)
 			for chunk_start in range(start_number, end_number, chunk_size):
 				chunk_end = chunk_start + chunk_size - 1
 				# print(chunk_start,chunk_end)
@@ -143,4 +148,7 @@ class Database:
 					cspace_page_number=iteration
 					)
 				executor.submit(chunk.start())
+				# futures.append(executor.submit(chunk.run()))
+				# for future in concurrent.futures.as_completed(futures):
+				# 	print(future._result)
 				iteration+=1
