@@ -12,7 +12,18 @@ def reconcile_items(config,database):
 	target = 'wikidata'
 	secrets = None # don't need secrets for wikidata
 
-	database.chunk_me(target,start_id,database.rows_in_db,chunk_size)
+	# get the correct api handler object for API calls
+	api_handler = [
+		x for x in database.api_handlers if "wikidata" in x.endpoint
+		][0]
+
+	database.chunk_me(
+		target,
+		start_id,
+		database.rows_in_db,
+		chunk_size,
+		api_handler=api_handler
+		)
 
 def reconcile_chunked_items(db_chunk):
 	status = None
@@ -66,7 +77,7 @@ def reconcile_chunked_items(db_chunk):
 		wikidata_response = json.loads(r.content)
 
 		parse_reconciled_batch(wikidata_response,db_chunk)
-	except requests.exceptions.RequestException as e:
+	except Exception as e:#requests.exceptions.RequestException as e:
 		print(e)
 		status = False
 

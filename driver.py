@@ -8,6 +8,7 @@ import sqlite3
 import sys
 import time
 # local imports
+import api_utils
 import cspace_utils
 import db_stuff
 import wikidata_utils
@@ -52,18 +53,29 @@ def main():
 			print("You need to set up the config file correctly, read the readme.")
 			sys.exit()
 
+		cspace_api_handler = api_utils.APIHandler("collectionspace")
+		database.api_handlers.append(cspace_api_handler)
 
 		cspace_utils.fetch_cspace_items(secrets,config,authority,authority_csid,database)
+		database.db_writer.run_me()
 		rows = database.count_me()
 		while rows < 1:
+			# it might take a minute to write?
 			time.sleep(1)
 			rows = database.count_me()
 			print(rows)
 
 		# get some additional data points for matching/reconciliation
 		cspace_utils.enrich_cspace_items(secrets,config,database)
+		database.db_writer.run_me()
+
 		# call the wikidata reconciliation api
+		wd_api_handler = api_utils.APIHandler("wikidata")
+		database.api_handlers.append(cspace_api_handler)
+
 		wikidata_utils.reconcile_items(config,database)
+		database.db_writer.run_me()
+
 	else:
 		# mode == csv
 		pass
