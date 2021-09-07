@@ -39,7 +39,8 @@ class APIHandler:
 
 	def run_me(self):
 		with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-			process_futures = {0:executor.submit(self.dummy_future())}
+			# process_futures = {0:executor.submit(self.dummy_future())}
+			process_futures = {}
 			while process_futures:
 				done,not_done = concurrent.futures.wait(process_futures.values())
 				process_futures.pop(0)
