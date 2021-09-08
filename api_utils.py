@@ -29,41 +29,39 @@ class APIHandler:
 		self.session.mount('https://', self.adapter)
 		self.futures = {}
 
-	def feed_me(self,chunk,url,auth):
-		self.url_queue.put({chunk.uuid:[url,auth]})
+	def feed_me(self,chunk_id,url,auth,data):
+		self.url_queue.put([url,auth,data,chunk_id])
 
-	def dummy_future(self):
-		# this is a placeholder function to generate an initial future object below
-		# print()
-		return None
+	def clean_me(self):
+		self.futures = {}
 
 	def run_me(self):
 		with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
 			# process_futures = {0:executor.submit(self.dummy_future())}
 			process_futures = {}
-			while process_futures:
-				done,not_done = concurrent.futures.wait(process_futures.values())
-				process_futures.pop(0)
-				print(process_futures)
-				while not self.url_queue.empty():
-					# print(self.url_queue)
-
-					# pull a chunk:url pair from the queue
-					(chunk_id,[url,auth]) = list(self.url_queue.get().items())[0]
-					print(chunk_id,[url,auth])
-					process_futures[chunk_id] = executor.submit(self.worker, url, auth)
-				for future in done:
-					print([x for x in done])
-					if not chunk_id == 0:
-						self.futures[chunk_id] = future
-					process_futures.pop(chunk_id)
-					# done.remove(future)
-
-
+			while not self.url_queue.empty():
+				[url,auth,data,chunk_id] = self.url_queue.get()
+				# print("HELLO FROM THE API RUNNER")
+				# print((chunk_id,[url,auth,data]))
+				process_futures[executor.submit(self.worker, url, auth=auth, data=data)] = (url,chunk_id)
+				self.url_queue.task_done()
+			for future in concurrent.futures.as_completed(process_futures):
+				url = process_futures[future][0]
+				chunk_id = process_futures[future][1]
+				self.futures[future] = chunk_id
+				# print(future.result().content[:50])
+		print(self.futures)
 		return self.futures
 
 	def worker(self,url,auth=None,data=None):
-		r = self.session.get(url,auth=auth,data=data)
-		print(r.content)
+		while True:
+			try:
+				r = self.session.get(url,auth=auth,data=data)
+				r.raise_for_status()
+				break
+			except Exception as e:
+				print(e)
+				time.sleep(.1)
+		# print(r.content)
 
 		return(r)

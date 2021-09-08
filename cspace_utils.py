@@ -7,6 +7,8 @@ import time
 
 from db_stuff import DBChunk
 
+########## STEP ONE #######################
+
 def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 	'''
 	This gets the initial paged results from CSpace.
@@ -32,7 +34,7 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 		# if you've set a limit on the number of results you want to deal with
 		# in one pass
 		number_of_full_pages,last_page_num_items = divmod(max_results_limit,number_results_per_page)
-	# last_page = number_of_full_pages+1
+	last_page = number_of_full_pages+1
 
 	database.chunk_me(
 		"cspace",
@@ -41,41 +43,31 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 		number_results_per_page,
 		api_handler=api_handler
 		)
+
 	if not last_page_num_items == 0:
 		database.chunk_me(
 			"cspace",
-			number_of_full_pages+1,
-			number_of_full_pages+1,
+			last_page,
+			last_page,
 			number_results_per_page,
 			api_handler=api_handler
 			)
 
 	futures = api_handler.run_me()
-
-	for chunk_id,future in futures.items():
+	print("FUTURES")
+	# print(futures.items())
+	for future,chunk_id in futures.items():
+		# print(chunk_id)
 		db_chunk = [x for x in database.chunks if x.uuid == chunk_id][0]
 
+		print(db_chunk)
 		items_in_page,page_items = parse_paged_response_items('items',future.result().content)
+		print(page_items)
 		if int(items_in_page) > 0:
 			for item in page_items:
 				insert_cspace_item(db_chunk,item)
-				# print("INSERT")
-
-def insert_cspace_item(db_chunk,item):
-	# item is an XML object
-	if db_chunk.config["cspace details"]["authority to use"] == "workauthorities":
-		data = get_work_data(item)
-		data.insert(0,None) # leave space for primary key
-		data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
-		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-
-	elif authority == "personauthorities":
-		data = cspace_utils.get_person_data(item)
-		data.insert(0,None) # leave space for primary key
-		data.extend([None,None,None,None,None]) # account for the empty wikidata columns
-		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
-
-	db_chunk.write_to_db(insertsql,data)
+				print("INSERT")
+	# api_handler.clean_me()
 
 def fetch_chunked_cspace_page(db_chunk):
 	"""
@@ -90,45 +82,35 @@ def fetch_chunked_cspace_page(db_chunk):
 		db_chunk.config["cspace details"]["query results per page"],
 		db_chunk.cspace_page_number
 		)
-	print(page_query)
+	# print(page_query)
 	try:
 		db_chunk.api_handler.feed_me(
-			db_chunk,
+			db_chunk.uuid,
 			page_query,
 			(
 				db_chunk.secrets['username'],
 				db_chunk.secrets['password']
-			)
+			),
+			None
 		)
 	except Exception as e:
 		print(e)
-		# r = requests.get(page_query,auth=(db_chunk.secrets['username'],db_chunk.secrets['password']))
-		# r.raise_for_status()
-		# status = True
 
+def insert_cspace_item(db_chunk,item):
+	# item is an XML object
+	if db_chunk.config["cspace details"]["authority to use"] == "workauthorities":
+		data = get_work_data(item)
+		data.insert(0,None) # leave space for primary key
+		data.extend([False,None,None,None,None,None,None]) # account for the empty wikidata columns
+		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
 
-		# THE FOLLOWING STUFF NEEDS TO BE SPLIT OUT
-	# 	items_in_page,page_items = parse_paged_response_items('items',r.content)
-	# 	# page_number += 1
-	# 	# print(page_items)
-	# 	if int(items_in_page) > 0:
-	# 		for item in page_items:
-	# 			db_chunk.insert_cspace_item(item)
-	# 			print("INSERT")
-	# 	# this looks for the number of items you want from a cspace query request
-	# 	# if int(items_in_page) < number_results_per_page:
-	# 	while True:
-	# 		try:
-	# 			db_chunk.connection.commit()
-	# 			break
-	# 		except Exception as e:
-	# 			print("INSERT ERROR")
-	# 			time.sleep(.2) # wait for db to unlock
-	# except requests.exceptions.RequestException as e:
-	# 	status = False
-	# 	print(e)
-	#
-	# return status
+	elif authority == "personauthorities":
+		data = cspace_utils.get_person_data(item)
+		data.insert(0,None) # leave space for primary key
+		data.extend([False,None,None,None,None,None]) # account for the empty wikidata columns
+		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?)"
+
+	db_chunk.write_to_db(insertsql,data)
 
 def get_total_number_of_items(secrets,config):
 	# do a first query to figure out how many total items there are in the authority
@@ -153,6 +135,11 @@ def get_total_number_of_items(secrets,config):
 ############ STEP 2 ####################
 
 def enrich_cspace_items(secrets,config,database):
+	"""
+	This is called from main()
+	it gets chunk_size number of items from the db to enrich
+	"""
+	status = False
 	start_id = 1
 	chunk_size = config['database details']['chunk_size']
 	target = 'cspace items'
@@ -171,6 +158,8 @@ def enrich_cspace_items(secrets,config,database):
 		chunk_size,
 		api_handler=api_handler
 		)
+	for chunk in database.chunks:
+		chunk.join()
 
 def get_chunked_cspace_items(db_chunk):
 	'''
@@ -182,34 +171,47 @@ def get_chunked_cspace_items(db_chunk):
 	status = None
 	api_handler = db_chunk.api_handler
 	if authority == 'workauthorities':
-		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
-		uris = db_chunk.query_db(uris_sql)
+		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN ? AND ?;"
+		uris_ids = db_chunk.query_db(uris_sql,(db_chunk.chunk_start,db_chunk.chunk_end))
 		# print(uris)
-		for item in uris:
+		for item in uris_ids:
 			uri = item[0]
 			id = item[1]
+			print("GONNA GET SOME ITEM DATA FOR DB ID"+str(id))
 			item_cspace_query = "{}{}".format(
 				db_chunk.config["cspace details"]["cspace_services_url"],
 				uri
 				)
-			# print(uri)
-			try:
-				db_chunk.api_handler.feed_me(
-					db_chunk,
-					page_query,
-					(
-						db_chunk.secrets['username'],
-						db_chunk.secrets['password']
-					)
-				)
-			except Exception as e:
-				print(e)
+			# try:
+			db_chunk.api_handler.feed_me(
+				db_chunk.uuid,
+				item_cspace_query,
+				(
+					db_chunk.secrets['username'],
+					db_chunk.secrets['password']
+				),
+				None
+			)
+			print("QUEUE SIZE IS "+str(api_handler.url_queue.qsize()))
+			# except Exception as e:
+			# 	print(e)
 		futures = api_handler.run_me()
+		while not api_handler.url_queue.empty():
+			print("RUNNING")
+			pass
+		api_handler.clean_me()
 
-		for chunk_id,future in futures.items():
+		for future,chunk_id in futures.items():
 			db_chunk = [x for x in db_chunk.database.chunks if x.uuid == chunk_id][0]
-			title_list,date_list = parse_single_work_item(future.result().content)
-
+			title_list,date_list,uri = parse_single_work_item(future.result().content)
+			print("TITLES,DATES")
+			print(title_list,date_list)
+			# print("URI")
+			# print(uri)
+			db_chunk.connect()
+			id = db_chunk.query_db("SELECT id FROM items where uri=?",(uri,))[0]
+			id = id[0]
+			# print(id)
 			if not title_list == []:
 				insertable = " | ".join(title_list)
 				insert_sql = '''\
@@ -227,9 +229,16 @@ def parse_single_work_item(response):
 	'''
 	This grabs extra data from a single item XML returned from CSpace
 	'''
+	# print("SHOULD BE AN ITEM")
+	# print(response)
 	tree = etree.XML(response)
+	# print(e for e in tree)
+	core_data = tree.find('{http://collectionspace.org/collectionspace_core/}collectionspace_core')
+	uri = core_data.findtext('uri')
 	work_data = tree.find('{http://collectionspace.org/services/work}works_common')
 	titles = work_data.find('./workTermGroupList')
+	# print("TITLES")
+	# print(titles)
 	title_list = []
 	if not titles == []:
 		for element in titles:
@@ -245,7 +254,7 @@ def parse_single_work_item(response):
 			date = element.findtext('dateDisplayDate')
 			date_list.append(date)
 
-	return title_list,date_list
+	return title_list,date_list,uri
 
 def parse_single_person_item():
 	pass

@@ -24,19 +24,28 @@ def reconcile_items(config,database):
 		chunk_size,
 		api_handler=api_handler
 		)
+	# for chunk in database.chunks:
+	# 	chunk.join()
+
+	futures = api_handler.run_me()
+	for future,chunk_id in futures.items():
+		db_chunk = [x for x in database.chunks if x.uuid == chunk_id][0]
+		wikidata_response = json.loads(future.result().content)
+		parse_reconciled_batch(wikidata_response,db_chunk)
 
 def reconcile_chunked_items(db_chunk):
-	status = None
 	item_type_id = db_chunk.config["wikidata details"]["item type to reconcile"]
 	item_type_label = db_chunk.config["wikidata details"]["item type label"]
 	batch_query_dict = {}
 	if item_type_label == 'film':
-		data_points_sql = "SELECT title, creator, year, id FROM items WHERE id BETWEEN {} AND {}".format(db_chunk.chunk_start,db_chunk.chunk_end)
-		data_points = db_chunk.query_db(data_points_sql)
+		data_points_sql = "SELECT title, creator, year, id FROM items WHERE id BETWEEN ? AND ?;"
+		data_points = db_chunk.query_db(data_points_sql,(db_chunk.chunk_start,db_chunk.chunk_end))
 		# print(data_points)
 		for item in data_points:
 			# get the relevant data points
+
 			title = item[0]
+			print("Getting Wikidata data for "+title)
 			creator = item[1]
 			year = item[2]
 			id = item[3]
@@ -60,40 +69,45 @@ def reconcile_chunked_items(db_chunk):
 					)
 			# add the query to the batch w/ q+id as key (q1,q2,q3,etc.)
 			batch_query_dict["q{}".format(str(id))] = query
-		print(batch_query_dict)
+		# print(batch_query_dict)
 	elif item_type_label == "human":
 		pass
 
 	query_payload = json.dumps({"queries":json.dumps(batch_query_dict)})
 
-	try:
-		print("Getting Wikidata data for "+title)
-		r = requests.post(
-			db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
-			data=json.loads(query_payload)
-			)
-		r.raise_for_status()
-		status = True
-		wikidata_response = json.loads(r.content)
+	# try:
+	db_chunk.api_handler.feed_me(
+		db_chunk.uuid,
+		db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
+		auth=None,
+		data =json.loads(query_payload)
+	)
+		# r = requests.post(
+		# 	db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
+		# 	data=json.loads(query_payload)
+		# 	)
+		# r.raise_for_status()
+		# status = True
+	# 	wikidata_response = json.loads(r.content)
+	#
+	# 	parse_reconciled_batch(wikidata_response,db_chunk)
+	# except Exception as e:#requests.exceptions.RequestException as e:
+	# 	print(e)
+	# 	status = False
 
-		parse_reconciled_batch(wikidata_response,db_chunk)
-	except Exception as e:#requests.exceptions.RequestException as e:
-		print(e)
-		status = False
-
-	return status
+	# return status
 
 def parse_reconciled_batch(wikidata_response,db_chunk):
 	for query,result in wikidata_response.items():
 		# print(query)
-		print(result)
+		# print(result)
 		if not result["result"] == []:
 			# i.e. if there was no match at all in wikidata
 			item_id = int(query.replace("q",""))
 			top_match = result["result"][0]
 			top_match_Qid = top_match["id"]
 			top_match_label = top_match["name"]
-			print(top_match_label)
+			# print(top_match_label)
 			top_match_is_match = top_match["match"]
 			top_match_score = top_match["score"]
 
@@ -112,4 +126,5 @@ def parse_reconciled_batch(wikidata_response,db_chunk):
 				top_match_Qid,
 				item_id
 				)
+			# print(update_sql,values)
 			db_chunk.write_to_db(update_sql,values)

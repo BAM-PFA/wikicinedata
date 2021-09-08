@@ -53,10 +53,19 @@ def main():
 			print("You need to set up the config file correctly, read the readme.")
 			sys.exit()
 
+		# set up API handler objects
 		cspace_api_handler = api_utils.APIHandler("collectionspace")
 		database.api_handlers.append(cspace_api_handler)
+		wd_api_handler = api_utils.APIHandler("wikidata")
+		database.api_handlers.append(wd_api_handler)
 
-		cspace_utils.fetch_cspace_items(secrets,config,authority,authority_csid,database)
+		cspace_utils.fetch_cspace_items(
+			secrets,
+			config,
+			authority,
+			authority_csid,
+			database
+			)
 		database.db_writer.run_me()
 		rows = database.count_me()
 		while rows < 1:
@@ -65,15 +74,18 @@ def main():
 			rows = database.count_me()
 			print(rows)
 
+		cspace_api_handler.clean_me()
+
 		# get some additional data points for matching/reconciliation
 		cspace_utils.enrich_cspace_items(secrets,config,database)
+		cspace_api_handler.clean_me()
+
 		database.db_writer.run_me()
 
 		# call the wikidata reconciliation api
-		wd_api_handler = api_utils.APIHandler("wikidata")
-		database.api_handlers.append(cspace_api_handler)
-
 		wikidata_utils.reconcile_items(config,database)
+		wd_api_handler.clean_me()
+
 		database.db_writer.run_me()
 
 	else:

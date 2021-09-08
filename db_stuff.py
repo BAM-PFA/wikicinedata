@@ -18,7 +18,6 @@ class DBChunk(threading.Thread):
 	"""
 
 	def __init__(self,
-		database,
 		target,
 		secrets,
 		config,
@@ -30,6 +29,7 @@ class DBChunk(threading.Thread):
 		cspace_page_number=None
 		):
 		threading.Thread.__init__(self)
+		self.database = None
 		self.uuid = str(uuid.uuid4())
 		self.target = target
 		self.secrets = secrets
@@ -54,10 +54,11 @@ class DBChunk(threading.Thread):
 	def write_to_db(self,sql,values):
 		# self.cursor.execute(sql,values)
 		# self.connection.commit()
+		print("FEEDING "+str(values))
 		self.write_queue.feed_queue(sql,values)
 
-	def query_db(self,sql):
-		result = self.cursor.execute(sql)
+	def query_db(self,sql,values):
+		result = self.cursor.execute(sql,values)
 		return result.fetchall()
 
 	def kill(self):
@@ -78,41 +79,6 @@ class DBChunk(threading.Thread):
 			# self.reconcile_items()
 			wikidata_utils.reconcile_chunked_items(self)
 
-			# if status:
-			# 	print("got it")
-			# 	break
-			# else:
-			# 	print("missed it")
-			# 	time.sleep(1) # wait a sec for http error
-
-	# def fetch_chunked_cspace_page(self):
-	# 	status = cspace_utils.fetch_chunked_cspace_page(self)
-	# 	return status
-
-	# def fetch_cspace_item_data(self):
-	# 	status = cspace_utils.get_chunked_cspace_items(self)
-	# 	return status
-	#
-	# def reconcile_items(self):
-	# 	status = wikidata_utils.reconcile_chunked_items(self)
-	# 	return status
-
-	# def insert_cspace_item(self,item):
-	# 	# should this go to cspace_utils?
-	# 	if self.config["cspace details"]["authority to use"] == "workauthorities":
-	# 		data = cspace_utils.get_work_data(item)
-	# 		data.insert(0,None) # leave space for primary key
-	# 		data.extend([None,None,None,None,None,None]) # account for the empty wikidata columns
-	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-	#
-	# 	elif authority == "personauthorities":
-	# 		data = cspace_utils.get_person_data(item)
-	# 		data.insert(0,None) # leave space for primary key
-	# 		data.extend([None,None,None,None,None]) # account for the empty wikidata columns
-	# 		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?)"
-	#
-	# 	self.cursor.execute(insertsql,data)
-
 class DBWriter(threading.Thread):
 	"""class to queue database write processes"""
 	def __init__(self,filepath):
@@ -131,11 +97,14 @@ class DBWriter(threading.Thread):
 
 	def run_me(self):
 		self.connect()
+		print("ACTUALLY WRITING TO DB NOW")
 		while not self.write_queue.empty():
-			sql_to_run,values = self.write_queue.get()
+			(sql_to_run,values) = self.write_queue.get()
+			print(sql_to_run,values)
 			# while True:
 				# try:
 			self.cursor.execute(sql_to_run,values)
+			self.write_queue.task_done()
 					# break
 				# except:
 					# time.sleep(.01)
@@ -159,10 +128,10 @@ class Database:
 
 	def create_cspace_table(self,authority):
 		if authority == 'workauthorities':
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, title, creator, year, alt_titles, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
+			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, title, creator, enriched, year, alt_titles, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
 			self.cursor.execute(sql)
 		elif authority == "personauthorities":
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
+			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, enriched, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
 			pass
 		else:
 			pass
@@ -189,7 +158,6 @@ class Database:
 				chunk_end = chunk_start + chunk_size - 1
 				# print(chunk_start,chunk_end)
 				chunk = DBChunk(
-					self,
 					target,
 					self.secrets,
 					self.config,
@@ -200,6 +168,7 @@ class Database:
 					chunk_end,
 					cspace_page_number=iteration
 					)
+				chunk.database = self
 				self.chunks.append(chunk)
 				executor.submit(chunk.start())
 				# futures.append(executor.submit(chunk.run()))
