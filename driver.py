@@ -83,15 +83,15 @@ def main():
 		database.db_writer.run_me()
 
 		# call the wikidata reconciliation api
-		wikidata_utils.reconcile_items(config,database)
-		wd_api_handler.clean_me()
+		# wikidata_utils.reconcile_items(config,database)
+		# wd_api_handler.clean_me()
 
-		database.db_writer.run_me()
 
 	else:
 		# mode == csv
 		pass
 	wikidata_utils.reconcile_items(config,database)
+	database.db_writer.run_me()
 
 	# write_csv(all_items,authority)
 

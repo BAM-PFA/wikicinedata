@@ -7,8 +7,14 @@ import time
 
 from db_stuff import DBChunk
 
-########## STEP ONE #######################
-
+###########################################
+##########    STEP ONE   ##################
+#
+#  • make a call to CSpace to retrieve as many items
+#    as are specified in config.json
+#  • parse the items returned as XML from the CSpace API
+#  • insert the minimal item data to the database
+#
 def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 	'''
 	This gets the initial paged results from CSpace.
@@ -67,12 +73,62 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 			for item in page_items:
 				insert_cspace_item(db_chunk,item)
 				print("INSERT")
-	# api_handler.clean_me()
+
+def get_total_number_of_items(secrets,config):
+	'''
+	do a first query to figure out how many total items there are in the authority
+	just retrieve the first page (0) and ask for one item (pgSz=1)
+	then use the <totalItems> element to get the total number
+	'''
+	initial_query = "{}/{}/{}/items?pgSz=1&pgNum=0".format(
+		config["cspace details"]["cspace_services_url"],
+		config["cspace details"]["authority to use"],
+		config["cspace details"]["authority cspace id"]
+		)
+	try:
+		print("Getting the total number of items in the authority.")
+		r = requests.get(initial_query,auth=(secrets['username'],secrets['password']))
+		r.raise_for_status()
+		total_items = parse_paged_response_items('top level',r.content)
+	except requests.exceptions.RequestException as e:
+		print(e)
+		total_items = None
+
+	return total_items
+
+def parse_paged_response_items(operation,response):
+	'''
+	This parses a page of results from an initial CSpace query
+	operation = what you want the parsing to do:
+	* return all the items in the page
+	* return top-level info from the page header
+	'''
+	try:
+		root = etree.XML(response)
+	except:
+		print(response)
+
+	if operation == 'items':
+		items_in_page = root.findtext('itemsInPage')
+		if not root.find('list-item') == None:
+			page_items = []
+			for item in root.findall('list-item'):
+				page_items.append(item)
+
+		return(items_in_page,page_items)
+	elif operation == 'top level':
+		total_items = root.findtext('totalItems')
+		if not total_items in (None,[],''):
+			total_items = int(total_items)
+		else:
+			total_items = 0
+
+		return total_items
 
 def fetch_chunked_cspace_page(db_chunk):
 	"""
 	This gets a single page of results from an initial cspace query
-	All the XML items on the page get inserted to the database
+	All the XML items on the page get inserted to the database.
 	It's called from the DBChunk object
 	"""
 	page_query = "{}/{}/{}/items?pgSz={}&pgNum={}".format(
@@ -96,6 +152,35 @@ def fetch_chunked_cspace_page(db_chunk):
 	except Exception as e:
 		print(e)
 
+def get_work_data(item):
+	'''
+	This gets data from a single listed XML item in a page of CSpace query results
+	'''
+	csid = item.findtext('csid')
+	# print(csid)
+	uri = item.findtext('uri')
+	creator = item.findtext('creator')
+	try:
+		# strip unnecessary cspace junk
+		creator = re.match(".*'(.+)'$",creator).groups()[0]
+	except:
+		pass
+	# print(creator)
+	title = item.findtext('termDisplayName')
+	# print(title)
+	data = [csid,uri,title,creator]
+	# print(data)
+	return data
+
+def get_person_data(item):
+	pass
+
+def get_authority_data(item):
+	pass
+
+def get_object_data(item):
+	pass
+
 def insert_cspace_item(db_chunk,item):
 	# item is an XML object
 	if db_chunk.config["cspace details"]["authority to use"] == "workauthorities":
@@ -112,27 +197,14 @@ def insert_cspace_item(db_chunk,item):
 
 	db_chunk.write_to_db(insertsql,data)
 
-def get_total_number_of_items(secrets,config):
-	# do a first query to figure out how many total items there are in the authority
-	# just retrieve the first page (0) and ask for one item (pgSz=1)
-	# then use the totalItems element to get the total number
-	initial_query = "{}/{}/{}/items?pgSz=1&pgNum=0".format(
-		config["cspace details"]["cspace_services_url"],
-		config["cspace details"]["authority to use"],
-		config["cspace details"]["authority cspace id"]
-		)
-	try:
-		print("Getting the total number of items in the authority.")
-		r = requests.get(initial_query,auth=(secrets['username'],secrets['password']))
-		r.raise_for_status()
-		total_items = parse_paged_response_items('top level',r.content)
-	except requests.exceptions.RequestException as e:
-		print(e)
-		total_items = None
 
-	return total_items
 
-############ STEP 2 ####################
+###########################################
+##########    STEP TWO   ##################
+#
+#  • call CSpace again for each item row in the database
+#    to enrich the minimal records from the first round
+#
 
 def enrich_cspace_items(secrets,config,database):
 	"""
@@ -257,62 +329,4 @@ def parse_single_work_item(response):
 	return title_list,date_list,uri
 
 def parse_single_person_item():
-	pass
-
-def parse_paged_response_items(operation,response):
-	'''
-	This parses a page of results from an initial CSpace query
-	operation = what you want the parsing to do:
-	* return all the items in the page
-	* return top-level info from the page header
-	'''
-	try:
-		root = etree.XML(response)
-	except:
-		print(response)
-
-	if operation == 'items':
-		items_in_page = root.findtext('itemsInPage')
-		if not root.find('list-item') == None:
-			page_items = []
-			for item in root.findall('list-item'):
-				page_items.append(item)
-
-		return(items_in_page,page_items)
-	elif operation == 'top level':
-		total_items = root.findtext('totalItems')
-		if not total_items in (None,[],''):
-			total_items = int(total_items)
-		else:
-			total_items = 0
-
-		return total_items
-
-def get_work_data(item):
-	'''
-	This gets data from a single listed XML item in a page of CSpace query results
-	'''
-	csid = item.findtext('csid')
-	# print(csid)
-	uri = item.findtext('uri')
-	creator = item.findtext('creator')
-	try:
-		# strip unnecessary cspace junk
-		creator = re.match(".*'(.+)'$",creator).groups()[0]
-	except:
-		pass
-	# print(creator)
-	title = item.findtext('termDisplayName')
-	# print(title)
-	data = [csid,uri,title,creator]
-	# print(data)
-	return data
-
-def get_person_data(item):
-	pass
-
-def get_authority_data(item):
-	pass
-
-def get_object_data(item):
 	pass

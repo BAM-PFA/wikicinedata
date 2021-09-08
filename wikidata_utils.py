@@ -3,11 +3,13 @@ import requests
 
 def reconcile_items(config,database):
 	'''
-	Do the stuff
+	This splits the database into :chunk_size records and creates a call to
+	the wikidata reconciliation service for each row. The chunk of rows is
+	sent as a single batch query to wikidata.
+	it's called from main()
 	'''
 	item_type_id = config["wikidata details"]["item type to reconcile"]
 	start_id = 1
-	# rows_in_db = database.rows_in_db
 	chunk_size = config['database details']['chunk_size']
 	target = 'wikidata'
 	secrets = None # don't need secrets for wikidata
@@ -24,16 +26,21 @@ def reconcile_items(config,database):
 		chunk_size,
 		api_handler=api_handler
 		)
-	# for chunk in database.chunks:
-	# 	chunk.join()
+	for chunk in database.chunks:
+		chunk.join()
 
 	futures = api_handler.run_me()
 	for future,chunk_id in futures.items():
 		db_chunk = [x for x in database.chunks if x.uuid == chunk_id][0]
 		wikidata_response = json.loads(future.result().content)
+		print(wikidata_response)
 		parse_reconciled_batch(wikidata_response,db_chunk)
 
 def reconcile_chunked_items(db_chunk):
+	'''
+	For a chunk of the database (rows between two id numbers)
+	create a query based on the existing data
+	'''
 	item_type_id = db_chunk.config["wikidata details"]["item type to reconcile"]
 	item_type_label = db_chunk.config["wikidata details"]["item type label"]
 	batch_query_dict = {}
@@ -82,20 +89,6 @@ def reconcile_chunked_items(db_chunk):
 		auth=None,
 		data =json.loads(query_payload)
 	)
-		# r = requests.post(
-		# 	db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
-		# 	data=json.loads(query_payload)
-		# 	)
-		# r.raise_for_status()
-		# status = True
-	# 	wikidata_response = json.loads(r.content)
-	#
-	# 	parse_reconciled_batch(wikidata_response,db_chunk)
-	# except Exception as e:#requests.exceptions.RequestException as e:
-	# 	print(e)
-	# 	status = False
-
-	# return status
 
 def parse_reconciled_batch(wikidata_response,db_chunk):
 	for query,result in wikidata_response.items():

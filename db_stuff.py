@@ -16,14 +16,13 @@ class DBChunk(threading.Thread):
 	"""
 	This represents a chunk of the sqlite3 db from start_id to end_id
 	"""
-
 	def __init__(self,
 		target,
 		secrets,
 		config,
 		api_handler,
 		filepath,
-		write_queue,
+		db_writer,
 		chunk_start,
 		chunk_end,
 		cspace_page_number=None
@@ -36,7 +35,7 @@ class DBChunk(threading.Thread):
 		self.config = config
 		self.api_handler = api_handler
 		self.filepath = filepath
-		self.write_queue = write_queue
+		self.db_writer = db_writer
 		self.connection = None
 		self.cursor = None
 		# starting row id
@@ -52,10 +51,9 @@ class DBChunk(threading.Thread):
 		self.cursor = self.connection.cursor()
 
 	def write_to_db(self,sql,values):
-		# self.cursor.execute(sql,values)
-		# self.connection.commit()
 		print("FEEDING "+str(values))
-		self.write_queue.feed_queue(sql,values)
+		self.db_writer.feed_queue(sql,values)
+		print("WRITE QUEUE IS "+str(self.db_writer.write_queue.qsize()))
 
 	def query_db(self,sql,values):
 		result = self.cursor.execute(sql,values)
@@ -68,15 +66,10 @@ class DBChunk(threading.Thread):
 		self.connect()
 		# while True:
 		if self.target == 'cspace':
-			# status = self.fetch_chunked_cspace_page()
 			cspace_utils.fetch_chunked_cspace_page(self)
 		elif self.target == 'cspace items':
-			# status = self.fetch_cspace_item_data()
-			# self.fetch_cspace_item_data()
 			cspace_utils.get_chunked_cspace_items(self)
 		elif self.target == 'wikidata':
-			# status =
-			# self.reconcile_items()
 			wikidata_utils.reconcile_chunked_items(self)
 
 class DBWriter(threading.Thread):
@@ -156,7 +149,7 @@ class Database:
 			print(start_number,end_number,chunk_size)
 			for chunk_start in range(start_number, end_number, chunk_size):
 				chunk_end = chunk_start + chunk_size - 1
-				# print(chunk_start,chunk_end)
+				print(chunk_start,chunk_end)
 				chunk = DBChunk(
 					target,
 					self.secrets,
@@ -171,7 +164,5 @@ class Database:
 				chunk.database = self
 				self.chunks.append(chunk)
 				executor.submit(chunk.start())
-				# futures.append(executor.submit(chunk.run()))
-				# for future in concurrent.futures.as_completed(futures):
-				# 	print(future._result)
+
 				iteration+=1
