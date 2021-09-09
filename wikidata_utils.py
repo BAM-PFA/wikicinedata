@@ -95,42 +95,59 @@ def parse_reconciled_batch(wikidata_response,db_chunk):
 		# print(result)
 		if not result["result"] == []:
 			# i.e. if there was no match at all in wikidata
+
 			item_id = int(query.replace("q",""))
 			top_match = result["result"][0]
-			top_match_Qid = top_match["id"]
-			top_match_label = top_match["name"]
-			# print(top_match_label)
-			top_match_is_match = top_match["match"]
-			top_match_score = top_match["score"]
+			if not top_match['type'] == []:
+				top_match_type = top_match['type'][0]['id']
+			else:
+				top_match_type = None
+			intended_match_type = db_chunk.config['wikidata details']['item type to reconcile']
+			if top_match_type == intended_match_type or top_match_type == None:
+				# first filter out false positives that are obviously wrong
 
-			update_sql = '''\
-			UPDATE items SET \
-			top_match_is_match=?, \
-			top_match_score=?, \
-			top_match_label=?, \
-			top_match_Qid=? \
-			WHERE id=?;
-			'''
-			values = (
-				top_match_is_match,
-				top_match_score,
-				top_match_label,
-				top_match_Qid,
-				item_id
-				)
-			# print(update_sql,values)
-			db_chunk.write_to_db(update_sql,values)
+				# ACTUALLY there could be subtypes listed like "short film = Q24862" instead of "film/Q11424"
+				# maybe leave this filter out
+
+				top_match_score = top_match["score"]
+				if top_match_score > 25:
+					# now filter out low-quality matches
+					top_match_Qid = top_match["id"]
+					top_match_label = top_match["name"]
+					# print(top_match_label)
+					top_match_is_match = top_match["match"]
+
+					update_sql = '''\
+					UPDATE items SET \
+					top_match_is_match=?, \
+					top_match_score=?, \
+					top_match_label=?, \
+					top_match_Qid=? \
+					WHERE id=?;
+					'''
+					values = (
+						top_match_is_match,
+						top_match_score,
+						top_match_label,
+						top_match_Qid,
+						item_id
+						)
+					# print(update_sql,values)
+					db_chunk.write_to_db(update_sql,values)
 
 def requery_qid_batch(qid_list):
 	"""
 	Given a list of wikidata QIDs search for extra data points.
 	To be used for matches on items with scores between 30-99
 	"""
-
 	ids = "|".join(qid_list)
-	wikidata_entities_url = "https://www.wikidata.org/w/api.php?action=wbgetentities&ids={}&format=json"
+	wikidata_entities_url = """
+		https://www.wikidata.org/w/api.php?\
+		action=wbgetentities&ids={}&format=json
+		""".format(ids)
 	# from the results, this is the dict with all the actual data points:
 	# api_response_json['entities'][QID]['claims']
+	# dict_keys(['P31', 'P495', 'P345', 'P364', 'P577', 'P3445', 'P344', 'P3138', 'P57', 'P162', 'P6127', 'P8033', 'P646', 'P4947'])
 	# From wikidata: Use GZip compression when making API calls by setting Accept-Encoding: gzip to reduce bandwidth usage.
 
 	pass

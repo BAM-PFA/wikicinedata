@@ -40,6 +40,9 @@ def fetch_cspace_items(secrets,config,authority,authority_csid,database):
 		number_of_full_pages,last_page_num_items = divmod(max_results_limit,number_results_per_page)
 	last_page = number_of_full_pages+1
 
+	print("THIS MANY PAGES")
+	print(number_of_full_pages)
+
 	database.chunk_me(
 		"cspace",
 		0,

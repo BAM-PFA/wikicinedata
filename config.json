@@ -1,7 +1,7 @@
 {
 	"cspace details":{
-		"query results per page":1000,
-		"cspace max query results":null,
+		"query results per page":10,
+		"cspace max query results":12,
 		"authority to use":"workauthorities",
 		"authority cspace id":"d28dfc96-da03-4b0b-9ae1",
 		"cspace_services_url":"https://cinefiles.cspace.berkeley.edu/cspace-services"

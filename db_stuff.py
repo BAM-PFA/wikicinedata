@@ -2,6 +2,7 @@ import concurrent.futures
 import queue
 import sqlite3
 import threading
+import time
 import uuid
 
 # local imports
@@ -38,7 +39,6 @@ class DBChunk(threading.Thread):
 		self.chunk_start = chunk_start
 		# ending row id
 		self.chunk_end = chunk_end
-		self.rows_in_db = 0
 		self.cspace_page_number = cspace_page_number
 		# self.shutdown_flag = threading.Event()
 
@@ -103,6 +103,7 @@ class Database:
 		self.cursor = None
 		self.secrets = None
 		self.config = None
+		self.rows_in_db = 0
 		self.db_writer = DBWriter(self.filepath)
 		self.api_handlers = []
 		self.chunks = []
