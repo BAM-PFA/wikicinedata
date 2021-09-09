@@ -1,17 +1,11 @@
-import asyncio
 import concurrent.futures
 import queue
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-import sqlite3
-import sys
-import threading
 import time
 
-from concurrent.futures import ThreadPoolExecutor
-from threading import BoundedSemaphore
-
+# local imports
 import cspace_utils
 import wikidata_utils
 

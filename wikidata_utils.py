@@ -1,5 +1,4 @@
 import json
-import requests
 
 def reconcile_items(config,database):
 	'''
@@ -121,3 +120,17 @@ def parse_reconciled_batch(wikidata_response,db_chunk):
 				)
 			# print(update_sql,values)
 			db_chunk.write_to_db(update_sql,values)
+
+def requery_qid_batch(qid_list):
+	"""
+	Given a list of wikidata QIDs search for extra data points.
+	To be used for matches on items with scores between 30-99
+	"""
+
+	ids = "|".join(qid_list)
+	wikidata_entities_url = "https://www.wikidata.org/w/api.php?action=wbgetentities&ids={}&format=json"
+	# from the results, this is the dict with all the actual data points:
+	# api_response_json['entities'][QID]['claims']
+	# From wikidata: Use GZip compression when making API calls by setting Accept-Encoding: gzip to reduce bandwidth usage.
+
+	pass

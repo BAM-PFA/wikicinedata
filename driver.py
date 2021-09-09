@@ -1,12 +1,9 @@
 import argparse
 import csv
 import json
-from lxml import etree
-import re
-import requests
-import sqlite3
 import sys
 import time
+
 # local imports
 import api_utils
 import cspace_utils
@@ -68,11 +65,9 @@ def main():
 			)
 		database.db_writer.run_me()
 		rows = database.count_me()
-		while rows < 1:
-			# it might take a minute to write?
-			time.sleep(1)
-			rows = database.count_me()
-			print(rows)
+		if not rows:
+			print("Something is up with the database or the initial api query. Try again!")
+			sys.exit()
 
 		cspace_api_handler.clean_me()
 
@@ -82,18 +77,12 @@ def main():
 
 		database.db_writer.run_me()
 
-		# call the wikidata reconciliation api
-		# wikidata_utils.reconcile_items(config,database)
-		# wd_api_handler.clean_me()
-
-
-	else:
-		# mode == csv
+	elif mode == 'csv':
 		pass
+
 	wikidata_utils.reconcile_items(config,database)
 	database.db_writer.run_me()
-
-	# write_csv(all_items,authority)
+	wd_api_handler.clean_me()
 
 if __name__=='__main__':
 	main()

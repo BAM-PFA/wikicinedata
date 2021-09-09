@@ -1,16 +1,12 @@
-import asyncio
 import concurrent.futures
 import queue
 import sqlite3
-import sys
 import threading
-import time
 import uuid
 
+# local imports
 import cspace_utils
 import wikidata_utils
-
-# class APIhandler(threading.Thread):
 
 class DBChunk(threading.Thread):
 	"""
@@ -42,7 +38,7 @@ class DBChunk(threading.Thread):
 		self.chunk_start = chunk_start
 		# ending row id
 		self.chunk_end = chunk_end
-		self.rows_in_db = None
+		self.rows_in_db = 0
 		self.cspace_page_number = cspace_page_number
 		# self.shutdown_flag = threading.Event()
 
@@ -53,7 +49,7 @@ class DBChunk(threading.Thread):
 	def write_to_db(self,sql,values):
 		print("FEEDING "+str(values))
 		self.db_writer.feed_queue(sql,values)
-		print("WRITE QUEUE IS "+str(self.db_writer.write_queue.qsize()))
+		# print("WRITE QUEUE IS "+str(self.db_writer.write_queue.qsize()))
 
 	def query_db(self,sql,values):
 		result = self.cursor.execute(sql,values)
@@ -75,7 +71,6 @@ class DBChunk(threading.Thread):
 class DBWriter(threading.Thread):
 	"""class to queue database write processes"""
 	def __init__(self,filepath):
-		# self.arg = sql_to_run
 		self.write_queue = queue.Queue()
 		self.filepath = filepath
 		self.connection = None
@@ -93,14 +88,10 @@ class DBWriter(threading.Thread):
 		print("ACTUALLY WRITING TO DB NOW")
 		while not self.write_queue.empty():
 			(sql_to_run,values) = self.write_queue.get()
-			print(sql_to_run,values)
-			# while True:
-				# try:
+			# print(sql_to_run,values)
 			self.cursor.execute(sql_to_run,values)
 			self.write_queue.task_done()
-					# break
-				# except:
-					# time.sleep(.01)
+
 		self.connection.commit()
 
 class Database:
@@ -131,8 +122,17 @@ class Database:
 
 	def count_me(self):
 		rows_in_db_sql = "SELECT COUNT(id) FROM items;"
-		self.rows_in_db = self.cursor.execute(rows_in_db_sql).fetchall()[0][0]
-		# print(self.rows_in_db)
+		counter = 0
+		while self.rows_in_db < 1:
+			# it might take a minute to write?
+			self.rows_in_db = self.cursor.execute(rows_in_db_sql).fetchall()[0][0]
+			if self.rows_in_db >= 1:
+				break
+			else:
+				time.sleep(1)
+				counter += 1
+				if counter > 5:
+					return None
 
 		return self.rows_in_db
 

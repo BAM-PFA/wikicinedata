@@ -1,10 +1,8 @@
-import concurrent.futures
-# import datetime
 from lxml import etree
 import re
 import requests
-import time
 
+# local imports
 from db_stuff import DBChunk
 
 ###########################################
@@ -197,8 +195,6 @@ def insert_cspace_item(db_chunk,item):
 
 	db_chunk.write_to_db(insertsql,data)
 
-
-
 ###########################################
 ##########    STEP TWO   ##################
 #
@@ -245,16 +241,14 @@ def get_chunked_cspace_items(db_chunk):
 	if authority == 'workauthorities':
 		uris_sql = "SELECT uri, id FROM items WHERE id BETWEEN ? AND ?;"
 		uris_ids = db_chunk.query_db(uris_sql,(db_chunk.chunk_start,db_chunk.chunk_end))
-		# print(uris)
 		for item in uris_ids:
 			uri = item[0]
 			id = item[1]
-			print("GONNA GET SOME ITEM DATA FOR DB ID"+str(id))
+			# print("GONNA GET SOME ITEM DATA FOR DB ID"+str(id))
 			item_cspace_query = "{}{}".format(
 				db_chunk.config["cspace details"]["cspace_services_url"],
 				uri
 				)
-			# try:
 			db_chunk.api_handler.feed_me(
 				db_chunk.uuid,
 				item_cspace_query,
@@ -264,9 +258,8 @@ def get_chunked_cspace_items(db_chunk):
 				),
 				None
 			)
-			print("QUEUE SIZE IS "+str(api_handler.url_queue.qsize()))
-			# except Exception as e:
-			# 	print(e)
+			# print("CSPACE API QUEUE SIZE IS "+str(api_handler.url_queue.qsize()))
+
 		futures = api_handler.run_me()
 		while not api_handler.url_queue.empty():
 			print("RUNNING")
@@ -276,14 +269,13 @@ def get_chunked_cspace_items(db_chunk):
 		for future,chunk_id in futures.items():
 			db_chunk = [x for x in db_chunk.database.chunks if x.uuid == chunk_id][0]
 			title_list,date_list,uri = parse_single_work_item(future.result().content)
-			print("TITLES,DATES")
-			print(title_list,date_list)
+			# print("TITLES,DATES")
+			# print(title_list,date_list)
 			# print("URI")
 			# print(uri)
 			db_chunk.connect()
 			id = db_chunk.query_db("SELECT id FROM items where uri=?",(uri,))[0]
 			id = id[0]
-			# print(id)
 			if not title_list == []:
 				insertable = " | ".join(title_list)
 				insert_sql = '''\
@@ -304,7 +296,6 @@ def parse_single_work_item(response):
 	# print("SHOULD BE AN ITEM")
 	# print(response)
 	tree = etree.XML(response)
-	# print(e for e in tree)
 	core_data = tree.find('{http://collectionspace.org/collectionspace_core/}collectionspace_core')
 	uri = core_data.findtext('uri')
 	work_data = tree.find('{http://collectionspace.org/services/work}works_common')
@@ -315,14 +306,11 @@ def parse_single_work_item(response):
 	if not titles == []:
 		for element in titles:
 			title = element.findtext('termName')
-			# print(title)
 			title_list.append(title)
 	dates = work_data.find('./workDateGroupList')
 	date_list = []
 	if not dates == []:
-		# print(dates)
 		for element in dates:
-			# print(element)
 			date = element.findtext('dateDisplayDate')
 			date_list.append(date)
 
