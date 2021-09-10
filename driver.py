@@ -70,6 +70,8 @@ def run_wikidata_queries(database):
 	database.db_writer.run_me()
 	wd_api_handler.clean_me()
 
+	wikidata_utils.refine_matches(database)
+
 def main():
 	args = set_args()
 	mode = args.mode

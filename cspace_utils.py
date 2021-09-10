@@ -148,7 +148,8 @@ def fetch_chunked_cspace_page(db_chunk):
 				db_chunk.secrets['username'],
 				db_chunk.secrets['password']
 			),
-			None
+			data=None,
+			header=None
 		)
 	except Exception as e:
 		print(e)
@@ -259,7 +260,8 @@ def get_chunked_cspace_items(db_chunk):
 					db_chunk.secrets['username'],
 					db_chunk.secrets['password']
 				),
-				None
+				data=None,
+				header=None
 			)
 			# print("CSPACE API QUEUE SIZE IS "+str(api_handler.url_queue.qsize()))
 

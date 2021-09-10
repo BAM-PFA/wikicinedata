@@ -1,5 +1,14 @@
 import json
 
+###########################################
+##########    STEP ONE   ##################
+#
+#  • query the wikidata reconciliation service endpoint
+#    with a chunk_size batch of db records
+#  • parse the items returned as JSON from wikidata
+#  • insert match information (if any; only taking the top match)
+#    to the db record in question
+#
 def reconcile_items(config,database):
 	'''
 	This splits the database into :chunk_size records and creates a call to
@@ -86,7 +95,8 @@ def reconcile_chunked_items(db_chunk):
 		db_chunk.uuid,
 		db_chunk.config['wikidata details']['wikidata reconciliation endpoint'],
 		auth=None,
-		data =json.loads(query_payload)
+		data=json.loads(query_payload),
+		header=None
 	)
 
 def parse_reconciled_batch(wikidata_response,db_chunk):
@@ -135,19 +145,91 @@ def parse_reconciled_batch(wikidata_response,db_chunk):
 					# print(update_sql,values)
 					db_chunk.write_to_db(update_sql,values)
 
-def requery_qid_batch(qid_list):
+###########################################
+##########    STEP TWO   ##################
+#
+#  • query wikidata itself (not the reconciliation service) with
+#    QID values from top matches that are not 100%
+#  • we're only interested in matches that are between 30%-99% confidence
+#  • parse the items returned as JSON from wikidata
+#  • using selected additional data points
+#    (director/creator; country; language; aliases?) see if any of the
+#    less than 100% matches can be refined
+#
+
+def refine_matches(database):
+	get_matches_to_refine_sql = """\
+	SELECT top_match_Qid from items WHERE \
+	top_match_score between 30 and 99.9;
+	"""
+	qid_list = []
+	chunk_size = database.config["database details"]["chunk_size"]
+	api_handler = [
+		x for x in database.api_handlers if "wikidata" in x.endpoint
+		][0]
+	matches = database.connection.execute(get_matches_to_refine_sql).fetchall()
+	for match in matches:
+		qid = match[0]
+		qid_list.append(qid)
+	if not qid_list == []:
+		database.chunk_me(
+			"wikidata requery",
+			0,
+			len(qid_list),
+			chunk_size,
+			api_handler=api_handler,
+			requery_list=qid_list
+		)
+	for chunk in database.chunks:
+		chunk.join()
+
+	futures = api_handler.run_me()
+	for future,chunk_id in futures.items():
+		print(type(future.result().content))
+		print(future.result().content)
+		db_chunk = [x for x in database.chunks if x.uuid == chunk_id][0]
+		wikidata_response = json.loads(future.result().content)
+		print(wikidata_response)
+		parse_requery_batch(wikidata_response,db_chunk)
+
+def requery_qid_batch(db_chunk):
 	"""
 	Given a list of wikidata QIDs search for extra data points.
 	To be used for matches on items with scores between 30-99
 	"""
-	ids = "|".join(qid_list)
-	wikidata_entities_url = """
-		https://www.wikidata.org/w/api.php?\
-		action=wbgetentities&ids={}&format=json
-		""".format(ids)
+	qid_chunk = db_chunk.database.requery_list[
+		db_chunk.chunk_start:db_chunk.chunk_end
+		]
+	# print(qid_chunk)
+	ids = "|".join(qid_chunk)
+	wikidata_entities_url = ("https://www.wikidata.org/w/api.php?action=wbgetentities&ids={}&props=labels|claims&format=json").format(ids)
+	# print(wikidata_entities_url)
+	db_chunk.api_handler.feed_me(
+		db_chunk.uuid,
+		wikidata_entities_url,
+		auth=None,
+		data=None,
+		header={'Accept-Encoding':'gzip'}
+		)
 	# from the results, this is the dict with all the actual data points:
 	# api_response_json['entities'][QID]['claims']
-	# dict_keys(['P31', 'P495', 'P345', 'P364', 'P577', 'P3445', 'P344', 'P3138', 'P57', 'P162', 'P6127', 'P8033', 'P646', 'P4947'])
+	# dict_keys(['P31' (instance of), 'P495' (country of origin), 'P345' (imdb id), 'P364'(original language),
+	# 'P577'(publication date), 'P3445', 'P344'(dir photography),'P170'(CREATOR)
+	# 'P3138', 'P57' (DIRECTOR), 'P162'(producer), 'P6127', 'P8033', 'P646', 'P4947'])
 	# From wikidata: Use GZip compression when making API calls by setting Accept-Encoding: gzip to reduce bandwidth usage.
 
-	pass
+def parse_requery_batch(wikidata_response,db_chunk):
+	for qid,description in wikidata_response['entities'].items():
+		titles = [
+			values['value']
+			for lang,values
+			in description['labels'].items()
+			]
+		print(titles)
+		if 'P57' in description['claims']:
+			directors = [
+				dir['mainsnak']['datavalue']['value']['id']
+				for dir
+				in description['claims']['P57']
+				]
+			print(directors)

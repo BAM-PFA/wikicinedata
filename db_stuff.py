@@ -40,7 +40,6 @@ class DBChunk(threading.Thread):
 		# ending row id
 		self.chunk_end = chunk_end
 		self.cspace_page_number = cspace_page_number
-		# self.shutdown_flag = threading.Event()
 
 	def connect(self):
 		self.connection = sqlite3.connect(self.filepath)
@@ -67,6 +66,8 @@ class DBChunk(threading.Thread):
 			cspace_utils.get_chunked_cspace_items(self)
 		elif self.target == 'wikidata':
 			wikidata_utils.reconcile_chunked_items(self)
+		elif self.target == 'wikidata requery':
+			wikidata_utils.requery_qid_batch(self)
 
 class DBWriter(threading.Thread):
 	"""class to queue database write processes"""
@@ -107,6 +108,7 @@ class Database:
 		self.db_writer = DBWriter(self.filepath)
 		self.api_handlers = []
 		self.chunks = []
+		self.requery_list = None
 
 	def feed_queue(self,sql_to_run):
 		self.db_writer.feed_queue(sql_to_run)
@@ -137,14 +139,23 @@ class Database:
 
 		return self.rows_in_db
 
-	def chunk_me(self,target,start_number,end_number,chunk_size,api_handler=None):#,cspace_page_number=None):
-		with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+	def chunk_me(self,
+		target,
+		start_number,
+		end_number,
+		chunk_size,
+		api_handler=None,
+		requery_list=None
+		):
+		if requery_list:
+			self.requery_list = requery_list
+		with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
 			'''
 			I found I had to limit the number of threads operating at once to
 			avoid segmentation faults, i/o errors, max http request errors, etc.
 			max_workers=10 sets the limit to 10 threads, maybe it could be more?
 			'''
-			futures = []
+
 			iteration=0
 			print("Target = "+target)
 			print(start_number,end_number,chunk_size)
