@@ -12,7 +12,8 @@
 	"wikidata details":{
 		"item type to reconcile":"Q11424",
 		"item type label":"film",
-		"wikidata reconciliation endpoint":"https://wikidata.reconci.link/en/api"
+		"wikidata reconciliation endpoint":"https://wikidata.reconci.link/en/api",
+		"wikidata sparql endpoint":"https://query.wikidata.org/sparql?query={}?format=json"
 	},
 	"holding pen":{
 		"description":"this is extra stuff/other options to use in config",
