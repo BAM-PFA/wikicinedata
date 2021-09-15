@@ -157,10 +157,23 @@ def parse_reconciled_batch(wikidata_response,db_chunk):
 #    less than 100% matches can be refined
 #
 
+def requery_batch_sparql():
+
+	property_sparql="""\
+	SELECT ?itemQID ?propertyLabel ?property \
+	WHERE {{ \
+	values ?itemQID {{ {} }} \
+	OPTIONAL {{ ?itemQID wdt:{} ?property }} \
+	SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en" }} \
+	}}\
+	""".format(qid_list,property_PID)
+
+
+
 def refine_matches(database):
 	get_matches_to_refine_sql = """\
-	SELECT top_match_Qid from items WHERE \
-	top_match_score between 30 and 99.9;
+	SELECT top_match_Qid from items \
+	WHERE top_match_score between 30 and 99.9;
 	"""
 	qid_list = []
 	chunk_size = database.config["database details"]["chunk_size"]

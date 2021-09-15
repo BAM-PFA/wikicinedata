@@ -185,18 +185,24 @@ def get_object_data(item):
 
 def insert_cspace_item(db_chunk,item):
 	# item is an XML object
-	if db_chunk.config["cspace details"]["authority to use"] == "workauthorities":
+	authority = db_chunk.config["cspace details"]["authority to use"]
+	# 3 columns already in the items table: primary key, csid, uri
+	number_item_columns = 3+len(db_chunk.config["database details"]["item table columns"])
+
+	if authority == "workauthorities":
 		data = get_work_data(item)
-		data.insert(0,None) # leave space for primary key
-		data.extend([False,None,None,None,None,None,None]) # account for the empty wikidata columns
-		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
 
 	elif authority == "personauthorities":
 		data = cspace_utils.get_person_data(item)
-		data.insert(0,None) # leave space for primary key
-		data.extend([False,None,None,None,None,None]) # account for the empty wikidata columns
-		insertsql = "INSERT INTO items VALUES (?,?,?,?,?,?,?,?,?,?)"
 
+	data.insert(0,None) # leave space for primary key
+	for x in range(len(data),number_item_columns+1):
+		# insert null values for wikidata columns
+		data.append(None)
+	insertsql = """\
+		INSERT INTO items \
+		VALUES ({})\
+		""".format(",".join(["?" for x in range(number_item_columns)]))
 	db_chunk.write_to_db(insertsql,data)
 
 ###########################################

@@ -114,14 +114,15 @@ class Database:
 		self.db_writer.feed_queue(sql_to_run)
 
 	def create_cspace_table(self,authority):
-		if authority == 'workauthorities':
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, title, creator, enriched, year, alt_titles, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
-			self.cursor.execute(sql)
-		elif authority == "personauthorities":
-			sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, enriched, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
-			pass
-		else:
-			pass
+		item_table_fields = ", ".join(self.config["database details"]["item table columns"])
+		sql = """\
+		CREATE TABLE IF NOT EXISTS \
+		items (id integer PRIMARY KEY, csid, uri, {})
+		""".format(item_table_fields)
+		self.cursor.execute(sql)
+		# elif authority == "personauthorities":
+		# 	sql = "CREATE TABLE IF NOT EXISTS items (id integer PRIMARY KEY, csid, uri, name, dates, enriched, top_match_is_match, top_match_score, top_match_label, top_match_Qid)"
+		# 	pass
 
 	def count_me(self):
 		rows_in_db_sql = "SELECT COUNT(id) FROM items;"
